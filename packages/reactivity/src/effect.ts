@@ -8,29 +8,61 @@ let activatEffect: undefined | ReactiveEffect //指针
 
 let targetMap = new WeakMap() //依赖图谱
 
-//ReactiveEffect类
+//ReactiveEffect（副作用）类 -- 存储在dep里面
 export class ReactiveEffect {
-    private _fn: Function
+    _fn: Function
+    deps: Set<ReactiveEffect>[] = []; //双向绑定 反向收集 deps
+    active: Boolean = true //标志位
+    onStop?: () => void //自定义回调
 
     constructor(fn: Function) {
         this._fn = fn
     }
 
     run() {
+        if (!this.active) {
+            return this._fn(); // 直接执行，不要导致设置activatEffect导致依赖收集
+        }
+
         //记录当前创建的ReactiveEffect对象
         activatEffect = this
         //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
-        this._fn()
+        const result = this._fn()
         //置为空
         activatEffect = undefined
+
+        return result
     }
+
+    stop() {
+        if (this.active) {
+            cleanupEffect(this)
+
+            if (this.onStop) this.onStop()
+            this.active = false
+        }
+    }
+}
+
+function cleanupEffect(effect: ReactiveEffect) {
+    effect.deps.forEach(dep => {
+        dep.delete(effect)
+    })
+    effect.deps.length = 0
 }
 
 export function effect(fn: Function) {
     //创建ReactiveEffect
     const _reactiveEffect = new ReactiveEffect(fn)
-
     _reactiveEffect.run()
+
+    //返回_reactiveEffect中的run方法
+    //就是将_reactiveEffect.run的函数指针赋值就好了，因为run方法里面有this指向
+    //因此需要bind出来
+    const runner: any = _reactiveEffect.run.bind(_reactiveEffect)
+    //runner函数在挂载_reactiveEffect对象
+    runner._effect = _reactiveEffect
+    return runner
 }
 
 /**
@@ -64,7 +96,10 @@ export function track(target: any, key: String | symbol) {
 export function trackEffects(dep: Set<ReactiveEffect>) {
     //activatEffect和判重
     if (activatEffect && !dep.has(activatEffect)) {
+        // 1. 正向收集：Dep -> Effect
         dep.add(activatEffect)
+        // 2. 【新增】反向收集：Effect -> Dep
+        activatEffect.deps.push(dep)
     }
 }
 
@@ -86,6 +121,15 @@ export function triggerEffects(dep: Set<ReactiveEffect>) {
             effect.run()
         }
     }
+}
+
+/**
+ * 对外暴露 API
+ * @param runner 
+ */
+export function stop(runner: any) {
+    // 通过 runner 上的 .effect 属性找到实例，调用 stop
+    runner.effect.stop();
 }
 
 
