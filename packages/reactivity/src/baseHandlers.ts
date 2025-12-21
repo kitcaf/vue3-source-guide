@@ -1,4 +1,5 @@
 import { track, trigger } from "./effect";
+import { ReactiveFlag } from "./reactive";
 
 /**
  * createGetter 通过默认参数 + 闭包 的行为提高代码复用性
@@ -10,6 +11,17 @@ export function createGetter(isReadonly = false) {
     // key (String | Symbol): 属性名
     //  receiver (Object): 代理对象本身
     return function getter(target: any, key: string | symbol, receiver: any) {
+        // 拦截Flags的读取
+        // 判断是不是Reactive proxy对象
+        if (key === ReactiveFlag.IS_REACTIVE) {
+            return !isReadonly //取反就好了
+        }
+        // 判断是不是Readonly proxy对象
+        if (key === ReactiveFlag.IS_READONLY) {
+            return isReadonly
+        }
+
+
         // const res = target[key] 对象有get属性并且里面有this的嵌套依赖问题
         // 保证每一个属性都会触发到代理的get保证收集成功依赖
         // const res = target[key]
