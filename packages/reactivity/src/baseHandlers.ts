@@ -1,5 +1,6 @@
+import { isObject } from "@mini-vue/shared";
 import { track, trigger } from "./effect";
-import { ReactiveFlag } from "./reactive";
+import { reactive, ReactiveFlag, readonly } from "./reactive";
 
 /**
  * createGetter 通过默认参数 + 闭包 的行为提高代码复用性
@@ -21,12 +22,20 @@ export function createGetter(isReadonly = false) {
             return isReadonly
         }
 
-
         // const res = target[key] 对象有get属性并且里面有this的嵌套依赖问题
         // 保证每一个属性都会触发到代理的get保证收集成功依赖
         // const res = target[key]
         const res = Reflect.get(target, key, receiver)
+        //注意isObject(res)要isObject(res)之前
         if (!isReadonly) track(target, key)
+
+        // 根据返回值res判断，如果res是对象，需要再根据这个对象建立响应式
+        // 最后要不要返回响应式对象，或者需不需要将obj = {a: { b : 1}}
+        // 改为obj.a的指针改为proxy对象
+        if (isObject(res)) {
+            return isReadonly ? readonly(res) : reactive(res)
+        }
+
         return res
     }
 }
