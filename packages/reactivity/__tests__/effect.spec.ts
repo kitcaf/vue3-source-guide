@@ -1,5 +1,5 @@
 import { it, describe, expect, vi } from "vitest"
-import { reactive } from "../src/reactive";
+import { isReactive, isReadonly, reactive, readonly } from "../src/reactive";
 import { effect, stop } from "../src/effect";
 
 const user = {
@@ -65,6 +65,39 @@ describe("effect test", () => {
 
         expect(nextAge).toBe(10)
         expect(scheduler).toBeCalledTimes(1)
+
+    })
+
+    // 深层嵌套 - 测试（无缓存）
+    it("nested reactive", () => {
+        const user = reactive({
+            lihua: {
+                age: 10
+            },
+            array: [{ bar: 2 }]
+        })
+
+        const readOnlyUser = readonly({
+            lihua: {
+                age: 10
+            }
+
+        })
+        let nextAge, nextbar;
+        effect(() => {
+            nextAge = user.lihua.age
+            nextbar = user.array[0].bar
+        })
+        expect(isReactive(user.lihua)).toBe(true);
+        expect(isReactive(user.array)).toBe(true);
+        expect(isReactive(user.array[0])).toBe(true);
+        expect(isReadonly(readOnlyUser.lihua)).toBe(true)
+        expect(nextAge).toBe(10)
+        expect(nextbar).toBe(2)
+        user.lihua.age++
+        user.array[0].bar++
+        expect(nextAge).toBe(11)
+        expect(nextbar).toBe(3)
 
     })
 })
