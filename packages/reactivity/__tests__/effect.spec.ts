@@ -6,7 +6,7 @@ const user = {
     name: "miniVue",
     get fullName() {
         // 当我们通过 Proxy 访问 fullName 时，这里的 this 是谁？
-        console.log("正在读取 fullName，此时 this 是：", this);
+        // console.log("正在读取 fullName，此时 this 是：", this);
         return "hello " + this.name;
     }
 };
@@ -15,7 +15,7 @@ describe("effect test", () => {
     it("reactive getter target[key]测试", () => {
         const proxyUser = reactive(user)
         effect(() => {
-            console.log("依赖更新 " + proxyUser.fullName)
+            // console.log("依赖更新 " + proxyUser.fullName)
         })
     })
 
@@ -43,6 +43,26 @@ describe("effect test", () => {
         stop(runner)
         user.age++
         expect(nextAge).toBe(11)
+    })
+
+    it("general loop-dead", () => {
+        const user = reactive({ age: 10 })
+        const runner = effect(() => {
+            user.age++
+        })
+        expect(user.age).toBe(11)
+        user.age++
+        expect(user.age).toBe(13) // 自己执行了一次++，effect也执行了一次++
+    })
+
+    it("array loop-dead", () => {
+        const list = reactive([])
+        const runner = effect(() => {
+            list.push(1)
+        })
+        expect(list).toStrictEqual([1])
+        list.push(2)
+        expect(list).toStrictEqual([1, 2, 1])
     })
 
     it("reactivate scheduler", () => {

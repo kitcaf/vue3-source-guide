@@ -3,7 +3,7 @@ import { effect } from "../src/effect";
 import { ref } from "../src/ref";
 
 describe("ref", () => {
-    it("should be reactive", () => {
+    it("reactive", () => {
         const a = ref(1);
         let dummy;
         let calls = 0;
@@ -27,7 +27,7 @@ describe("ref", () => {
         expect(calls).toBe(2); // calls 应该还是 2
     });
 
-    it("should make nested properties reactive", () => {
+    it("should make nested object reactive", () => {
         const a = ref({
             count: 1
         });

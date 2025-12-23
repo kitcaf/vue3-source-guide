@@ -31,7 +31,7 @@ export class ReactiveEffect {
             return this._fn(); // 直接执行，不要导致设置activatEffect导致依赖收集
         }
 
-        //记录当前创建的ReactiveEffect对象
+        //（1）effect函数 （2）依赖更新 记录当前创建的ReactiveEffect对象
         activatEffect = this
         //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
         const result = this._fn()
@@ -138,9 +138,11 @@ export function trigger(target: any, key: String | symbol) {
 export function triggerEffects(dep: Set<ReactiveEffect>) {
     if (dep) {
         for (const effect of dep) {//Set类型的for循环, of
-            if (effect.scheduler)
-                effect.scheduler() //控制权交换给用户
-            else effect.run()
+            if (effect !== activatEffect) {
+                if (effect.scheduler)
+                    effect.scheduler() //控制权交换给用户
+                else effect.run()
+            }
         }
     }
 }
