@@ -31,7 +31,7 @@ export class ReactiveEffect {
             return this._fn(); // 直接执行，不要导致设置activatEffect导致依赖收集
         }
 
-        //记录当前创建的ReactiveEffect对象
+        //（1）effect函数 （2）依赖更新 记录当前创建的ReactiveEffect对象
         activatEffect = this
         //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
         const result = this._fn()
@@ -113,8 +113,8 @@ export function track(target: any, key: String | symbol) {
 }
 
 // 抽离具体的收集逻辑，方便后续复用
-function trackEffects(dep: Set<ReactiveEffect>) {
-    //activatEffect和判重
+export function trackEffects(dep: Set<ReactiveEffect>) {
+    //activatEffect和判重（其实每次依赖更新的时候-都会进入到track）
     if (activatEffect && !dep.has(activatEffect)) {
         // 1. 正向收集：Dep -> Effect
         dep.add(activatEffect)
@@ -135,12 +135,14 @@ export function trigger(target: any, key: String | symbol) {
     triggerEffects(dep)
 }
 
-function triggerEffects(dep: Set<ReactiveEffect>) {
+export function triggerEffects(dep: Set<ReactiveEffect>) {
     if (dep) {
         for (const effect of dep) {//Set类型的for循环, of
-            if (effect.scheduler)
-                effect.scheduler() //控制权交换给用户
-            else effect.run()
+            if (effect !== activatEffect) {
+                if (effect.scheduler)
+                    effect.scheduler() //控制权交换给用户
+                else effect.run()
+            }
         }
     }
 }
