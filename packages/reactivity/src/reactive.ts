@@ -6,9 +6,10 @@ import { track, trigger } from "./effect"
  * （2）劫持修改 (SET) - 查找依赖
  */
 
-export const enum ReactiveFlag {
+export const enum ReactiveFlags {
     IS_REACTIVE = "__v_isReactive",
-    IS_READONLY = "__v_isReadonly"
+    IS_READONLY = "__v_isReadonly",
+    RAW = "__v_raw"
 }
 
 export const reactiveMap = new WeakMap<Object, any>()
@@ -43,11 +44,11 @@ export function shallowReadonly(raw: any) {
  * 4. 使用 !! 将 undefined 强转为 boolean (false)
  */
 export function isReactive(value: any) {
-    return !!value[ReactiveFlag.IS_REACTIVE]
+    return !!value[ReactiveFlags.IS_REACTIVE]
 }
 
 export function isReadonly(value: any) {
-    return !!value[ReactiveFlag.IS_READONLY]
+    return !!value[ReactiveFlags.IS_READONLY]
 }
 
 /**
@@ -56,6 +57,21 @@ export function isReadonly(value: any) {
  */
 export function isProxy(value: any) {
     return isReactive(value) || isReadonly(value)
+}
+
+/**
+ * 
+ * @param observed 
+ */
+export function toRaw(observed: any): void {
+    /**
+     * 普通对象 返回 underfind 
+     * reactive proxy对象 返回target
+     */
+    const raw = observed && observed[ReactiveFlags.RAW];
+    // 这里之所以要递归，可能出现readonly(reactive(obj))
+    // 终的target一定是没有ReactiveFlags.RAW作为递归结束条件 
+    return raw ? toRaw(raw) : observed
 }
 
 // 抽离通用的 Proxy 创建逻辑

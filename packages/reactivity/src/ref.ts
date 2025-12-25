@@ -72,6 +72,47 @@ export function proxyRefs(objectWithRefs: any) {
     })
 }
 
+class ObjectRefImpl {
+    public __v_isRef = true; // ref标志
+    public _shallow: boolean = false; // 浅对象新增标志位
+
+    constructor(
+        public _object: any,
+        public _key: any,
+    ) {
+
+    }
+
+    get value() {
+        /**
+         * 兼容普通对象
+         * 如果 _object 是 reactive，它getter里自动解包了，unRef(值) 还是 值
+         * 如果 _object 是普通对象，它getter返回 Ref，unRef(Ref) 变成 值。
+         */
+        const val = this._object[this._key]
+        return unRef(val)
+    }
+
+    set value(newValue: any) {
+        /**
+         * 兼容普通对象 setter 
+         * 普通对象没有 Proxy 帮我们拦截 setter
+         * 必须手动判断：如果原值是 Ref，我们要更新 Ref.value
+         */
+        const val = this._object[this._key];
+        if (isRef(val) && !isRef(newValue)) { //说明它是普通对象或者newValue不是ref
+            val.value = newValue
+        } else { // reactive对象 
+            this._object[this._key] = newValue
+        }
+
+    }
+}
+
+export function toRef(object: any, key: string) {
+    return new ObjectRefImpl(object, key)
+}
+
 export function trackRefValue(ref: any) {
     trackEffects(ref.dep!)
 }
