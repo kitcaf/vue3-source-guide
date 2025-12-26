@@ -7,6 +7,7 @@ import { extend } from "@mini-vue/shared";
 
 //全局变量
 let activatEffect: undefined | ReactiveEffect //指针
+let shouldTrack = true; //全局开关，默认允许收集
 
 let targetMap = new WeakMap() //依赖图谱
 
@@ -59,6 +60,14 @@ function cleanupEffect(effect: ReactiveEffect) {
     effect.deps.length = 0
 }
 
+export function pauseTracking() {
+    shouldTrack = false;
+}
+
+export function enableTracking() {
+    shouldTrack = true;
+}
+
 export function effect(fn: Function, option: ReactiveEffectOptions = {}) {
     //创建ReactiveEffect
     const _reactiveEffect = new ReactiveEffect(fn, option.scheduler)
@@ -91,8 +100,8 @@ export function stop(runner: any) {
  */
 export function track(target: any, key: String | symbol) {
     //初步判断 任意响应式的访问都会导致track，但是不是所有的都要收集依赖
-    //只有effect函数的执行才会被收集依赖
-    if (!activatEffect) return
+    //只有effect函数的执行才会被收集依赖和shouldTrack=true
+    if (!shouldTrack || activatEffect === undefined) return
 
     //找到对应的depsMap-本质就是map
     let depsMap = targetMap.get(target)
