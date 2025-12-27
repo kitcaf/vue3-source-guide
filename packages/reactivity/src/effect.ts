@@ -8,6 +8,7 @@ import { extend } from "@mini-vue/shared";
 //全局变量
 let activatEffect: undefined | ReactiveEffect //指针
 let shouldTrack = true; //全局开关，默认允许收集
+const trackStack: boolean[] = []; // 历史shouldTrack栈
 
 let targetMap = new WeakMap() //依赖图谱
 
@@ -61,11 +62,14 @@ function cleanupEffect(effect: ReactiveEffect) {
 }
 
 export function pauseTracking() {
+    trackStack.push(shouldTrack) //存储上一个状态
     shouldTrack = false;
 }
 
 export function enableTracking() {
-    shouldTrack = true;
+    let last = trackStack.pop()
+    // shouldTrack始终等于last，除非特殊情况enableTracking导致的栈空取值
+    shouldTrack = trackStack.length === 0 ? true : last!;
 }
 
 export function effect(fn: Function, option: ReactiveEffectOptions = {}) {

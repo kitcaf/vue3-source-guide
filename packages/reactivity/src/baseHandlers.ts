@@ -1,7 +1,8 @@
-import { extend, isObject } from "@mini-vue/shared";
+import { extend, hasOwn, isArray, isObject } from "@mini-vue/shared";
 import { track, trigger } from "./effect";
 import { reactive, ReactiveFlags, readonly } from "./reactive";
 import { isRef } from "./ref";
+import { arrayInstrumentations, instrumentations } from "./arrayInstrumentations";
 
 /**
  * createGetter 通过默认参数 + 闭包 的行为提高代码复用性
@@ -26,6 +27,11 @@ export function createGetter(isReadonly = false, shallow = false) {
         // 判断是不是toRaw 返回原始对象
         if (key === ReactiveFlags.RAW) {
             return target
+        }
+
+        //数组特定方法的判断
+        if (isArray(target) && hasOwn(arrayInstrumentations, key)) {
+            return arrayInstrumentations[key]
         }
 
         // const res = target[key] 对象有get属性并且里面有this的嵌套依赖问题
@@ -112,3 +118,5 @@ export const readonlyHandlers = {
 export const shallowReadonlyHandlers = extend({}, readonlyHandlers, {
     get: shallowReadonlyGet
 })
+
+
