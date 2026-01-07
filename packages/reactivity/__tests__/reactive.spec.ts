@@ -1,5 +1,5 @@
 import { it, describe, expect } from "vitest"
-import { isReactive, isReadonly, reactive, readonly, shallowReadonly } from "../src/reactive";
+import { isReactive, isReadonly, reactive, readonly, shallowReadonly, toRaw } from "../src/reactive";
 import { isProxy } from "node:util/types";
 
 describe("reactive test", () => {
@@ -36,6 +36,18 @@ describe("reactive test", () => {
 
         // 同时也验证一下它确实是响应式的
         expect(isReactive(observedB)).toBe(true);
+    })
+
+    it("toRaw", () => {
+        const original = { foo: 1 };
+        const observed = reactive(original);
+
+        expect(toRaw(observed)).toBe(original);
+
+        expect(toRaw(original)).toBe(original);
+
+        const wrapped = readonly(observed);
+        expect(toRaw(wrapped)).toBe(original);
     })
 
 })

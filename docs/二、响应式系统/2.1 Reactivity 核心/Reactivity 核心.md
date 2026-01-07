@@ -1,0 +1,100 @@
+---
+order: 1
+---
+
+# reactivity 的核心流程
+
+在本章中我们经常看到一个单词Effect（副作用）；**Effect（副作用）** 指的是函数在执行过程中对外部环境造成的变更（**后面会看到一个`Effect(fn)` 函数**，**其中fn入参函数就是副作用**）
+
+在 Vue 中，**渲染 DOM** 本质上就是一种副作用。此外，`computed` 计算属性、`watch` 回调、网络请求等也是副作用。Vue 的 Reactivity 系统的核心职责就是：**精确控制这些副作用何时执行、如何执行。**
+
+# 设计模式
+
+Vue 的响应式系统在设计模式上，属于典型的 **观察者模式（Observer Pattern）**，但它具具备一个非常特殊的属性：**透明性（Transparency）**
+
+ **注意： vue3.5版本已经全面采用该设计模式进行重构代码，或者说响应式系统更加独立（比如可以单独拿去给其他非 Vue 框架使用）因此可能会看到后面的手撕实现的变量对不上vue≥3.5的源码，其实并没有影响；反而我们当前的实现易于理解和学习，我们在本章的最后一节会加入vue 3.5版本中需要学习思考的部分** 
+
+（1）核心模式：Observer Pattern
+
+在标准的 GOF 设计模式中，观察者模式包含两个角色：
+
+- **Subject (目标/被观察者):** 对应 Vue 中的 `Reactive Object`（响应式数据）。
+- **Observer (观察者):** 对应 Vue 中的 `Subscriber` 或 `Effect`（副作用函数，如组件的 `render` 函数）。
+
+> 响应式数据表示我可以被订阅了（订阅我的将收到我发生更改时发送的通知），Effect(fn)函数表示我要去订阅（fn里面访问了什么响应式变量就表示订阅了什么响应式数据）
+> 
+
+**对应的交互流程：**
+
+- **Subscription (订阅):** Observer **向** Subject 注册（在Subject中注册了**Observer** ），表示我对你感兴趣。
+- **Notification (通知):** 当 Subject 状态改变时，遍历通知所有注册的 Observer。
+
+（2）Vue 的特异性：依赖倒置与透明性
+
+在传统的观察者模式（如 RxJS 或 Node.js EventEmitter）中，订阅通常是显式的：
+
+```bash
+// 显式订阅 (RxJS 风格)
+subject.subscribe(observer);
+```
+
+### vue的reactivity 的核心流程
+
+而 Vue 采用的是 **隐式依赖收集（Implicit Dependency Collection）**，这构成了 Vue 独特的开发体验：
+
+- **IoC (控制反转):** 开发者不需要手动订阅。Vue 在运行时（Runtime）通过底层拦截机制，自动推断出依赖关系。
+- **数据劫持 (Data Interception):**
+    - **Vue 2:** 使用 `Object.defineProperty`。
+    - **Vue 3:** 使用 ES6 `Proxy` 进行元编程（Meta-programming）
+
+从实现的角度的看主要就是以下的三步：
+
+- 劫持 (Interception) —— 安插眼线
+- 依赖收集 (Track) —— 谁在用我？
+- 派发更新 (Trigger) —— 通知执行
+
+Vue 的响应式系统由 **代理层 (Proxy Layer)**、**副作用层 (Effect Layer)** 和 **依赖管理层 (Dependency Graph)** 组成：
+
+1. **代理层 (The Proxy Layer)** —— 对应“劫持 (Interception)：它的核心职责是将原生的 JavaScript 对象（POJO）转换为**响应式对象，对应的对象就是Reactive Proxy**
+
+2. 依赖管理层 (The Dependency Graph)—— 对应“收集 (Track) & 派发 (Trigger)：它维护着**数据与副作用（effect）**之间的多对多映射关系，**对应的对象是Dep (Dependency)**
+
+3. 副作用层 (The Effect Layer) —— 对应执行函数：系统的执行单元，封装了用户函数 (fn) 的类。**对应的对象是ReactiveEffect**1.2 实现reactive
+
+![image.png](attachment:6dce9391-2fa1-46dd-89ce-3f8869146db5:image.png)
+
+第一点：其核心本质就是**二级哈希表结构的查找过程。targetMap（响应式对象本身，depsMap）；depsMap（响应式对象属性名，Dep）；Dep 一个set （一系列的ReactiveEffect）**
+
+```tsx
+// 全局单例 targetMap
+const targetMap = new WeakMap();
+
+// 假设有两个对象：user 和 settings
+targetMap = {
+  // Key: user 对象
+  [user]: {
+    // Value: depsMap (user 的属性表)
+    "name": Set<ReactiveEffect> [effect1, effect2], // 谁依赖了 user.name
+    "age":  Set<ReactiveEffect> [effect1]           // 谁依赖了 user.age
+  },
+
+  // Key: settings 对象
+  [settings]: {
+    // Value: depsMap (settings 的属性表)
+    "theme": Set<ReactiveEffect> [effect3]          // 谁依赖了 settings.theme
+  }
+}
+```
+
+**第二点（核心）：**Collect Dependencies 对应的`effect()`这个关键函数；我们都感受过count ++， 页面变化的情况。页面变化本质就是render()函数的执行，这个函数是在页面组件加载时（<div>{{obj.count}}</div>>）被effect()函数处理成ReactiveEffect对象保存下来的，那又是怎么知道这个render()需要收集的（如果里面就是普通的变量肯定是不需要收集的）, 是因为这个页面模板中触发了响应式对象的getter方法。但是getter方法是无法获取render()函数(**包装成了ReactiveEffect**)。
+
+`effect()`函数解决这个问题：是将依赖响应式变量的函数/副作用收集起来的关键，本质就是**将传入的函数fn包装为 ReactiveEffect 对象，并且调用一次里面的 run 方法，run方法就做3步**
+
+- activeEffect指向当前的**ReactiveEffect 对象**
+- 执行**函数fn，如果里面触发了响应式对象的getter方法，那么根据activeEffect**就可以收集到此时依赖这个响应式对象的**ReactiveEffect 对象**
+- activeEffect指为空
+
+第三点：**ReactiveEffect和activeEffect的区别**
+
+- ReactiveEffect：本质是一个对象，它是**副作用的容器**。它把将effect函数（DOM更新函数、自定义更新函数）包裹起来，同时自身挂载着各种属性
+- activeEffect：**一个全局变量（指针）**，它指向**当前正在执行的那一个 ReactiveEffect 实例。目的是让 Proxy 能发现是谁在读（详细可以查看第二点）。**

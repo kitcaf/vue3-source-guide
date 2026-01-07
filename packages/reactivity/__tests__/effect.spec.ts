@@ -45,6 +45,7 @@ describe("effect test", () => {
         expect(nextAge).toBe(11)
     })
 
+    // 普通effect循环测试
     it("general loop-dead", () => {
         const user = reactive({ age: 10 })
         const runner = effect(() => {
@@ -55,14 +56,31 @@ describe("effect test", () => {
         expect(user.age).toBe(13) // 自己执行了一次++，effect也执行了一次++
     })
 
-    it("array loop-dead", () => {
+    //数组死循环测试
+    it("array loop-dead push", () => {
         const list = reactive([])
+        const spy = vi.fn();
         const runner = effect(() => {
-            list.push(1)
+            list.push(1) //不被收集依赖，list修改它也不应该被执行
+            spy();
         })
         expect(list).toStrictEqual([1])
         list.push(2)
-        expect(list).toStrictEqual([1, 2, 1])
+        expect(list).toStrictEqual([1, 2])
+        expect(spy).toHaveBeenCalledTimes(1);
+    })
+
+    it("array loop-dead shift", () => {
+        const arr = reactive([1]);
+        const spy = vi.fn();
+
+        effect(() => {
+            arr.shift(); // 也会隐式访问 length 并修改 length
+            spy();
+        });
+
+        expect(arr.length).toBe(0);
+        expect(spy).toHaveBeenCalledTimes(1);
     })
 
     it("reactivate scheduler", () => {

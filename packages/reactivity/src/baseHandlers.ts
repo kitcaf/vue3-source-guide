@@ -1,6 +1,8 @@
-import { extend, isObject } from "@mini-vue/shared";
+import { extend, hasOwn, isArray, isObject } from "@mini-vue/shared";
 import { track, trigger } from "./effect";
-import { reactive, ReactiveFlag, readonly } from "./reactive";
+import { reactive, ReactiveFlags, readonly } from "./reactive";
+import { isRef } from "./ref";
+import { arrayInstrumentations, instrumentations } from "./arrayInstrumentations";
 
 /**
  * createGetter 通过默认参数 + 闭包 的行为提高代码复用性
@@ -14,12 +16,22 @@ export function createGetter(isReadonly = false, shallow = false) {
     return function getter(target: any, key: string | symbol, receiver: any) {
         // 拦截Flags的读取
         // 判断是不是Reactive proxy对象
-        if (key === ReactiveFlag.IS_REACTIVE) {
+        if (key === ReactiveFlags.IS_REACTIVE) {
             return !isReadonly //取反就好了
         }
         // 判断是不是Readonly proxy对象
-        if (key === ReactiveFlag.IS_READONLY) {
+        if (key === ReactiveFlags.IS_READONLY) {
             return isReadonly
+        }
+
+        // 判断是不是toRaw 返回原始对象
+        if (key === ReactiveFlags.RAW) {
+            return target
+        }
+
+        //数组特定方法的判断
+        if (isArray(target) && hasOwn(arrayInstrumentations, key)) {
+            return arrayInstrumentations[key]
         }
 
         // const res = target[key] 对象有get属性并且里面有this的嵌套依赖问题
@@ -31,6 +43,11 @@ export function createGetter(isReadonly = false, shallow = false) {
 
         //shallow 直接返回
         if (shallow) return res
+
+        // ref对象的直接解包
+        if (isRef(res)) {
+            return res.value
+        }
 
         // 根据返回值res判断，如果res是对象，需要再根据这个对象建立响应式
         // 最后要不要返回响应式对象，或者需不需要将obj = {a: { b : 1}}
@@ -58,6 +75,13 @@ export function createSetter(isReadonly = false) {
             );
             return true
         }
+        //Ref 自动赋值
+        const oldValue = (target as any)[key];
+        if (isRef(oldValue) && !isRef(newValue)) {
+            oldValue.value = newValue;
+            return true;
+        }
+
         // target[key] = newValue
         const res = Reflect.set(target, key, newValue, receiver)
         trigger(target, key)
@@ -94,3 +118,5 @@ export const readonlyHandlers = {
 export const shallowReadonlyHandlers = extend({}, readonlyHandlers, {
     get: shallowReadonlyGet
 })
+
+

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { effect } from "../src/effect";
-import { isRef, proxyRefs, ref, unRef } from "../src/ref";
+import { isRef, proxyRefs, ref, toRef, toRefs, unRef } from "../src/ref";
 import { reactive } from "../src/reactive";
 
 describe("ref", () => {
@@ -68,6 +68,110 @@ describe("ref", () => {
 
         // 2. 如果传入普通值，原样返回
         expect(unRef(1)).toBe(1);
+    });
+
+    it("toRef： Reactive object and ref key", () => {
+        const obj = reactive({
+            foo: ref(1),
+        });
+
+        const refFoo = toRef(obj, "foo");
+
+        // 1. 读 (Get)
+        expect(refFoo.value).toBe(1);
+
+        // 2. 写 (Set) - 应该更新内部的 ref
+        refFoo.value = 2;
+        expect(obj.foo).toBe(2); // 响应式对象自动拆包读取
+        expect(refFoo.value).toBe(2);
+
+        // 3. 验证响应式 (Reactivity)
+        // 修改 refFoo 是否会触发 effect
+        let dummy;
+        effect(() => {
+            dummy = refFoo.value;
+        });
+        expect(dummy).toBe(2);
+
+        // 修改源对象，refFoo 应该也能感知
+        obj.foo = 3;
+        expect(dummy).toBe(3);
+        expect(refFoo.value).toBe(3);
+    });
+
+    it("toRef： Reactive object and common key", () => {
+        const obj = reactive({
+            bar: 1,
+        });
+
+        const refBar = toRef(obj, "bar");
+
+        expect(refBar.value).toBe(1);
+
+        // 触发更新
+        let dummy;
+        effect(() => {
+            dummy = refBar.value;
+        });
+        expect(dummy).toBe(1);
+
+        // 修改 refBar -> 触发 else 分支 -> 修改 proxy -> 触发 trigger
+        refBar.value = 2;
+        expect(obj.bar).toBe(2);
+        expect(dummy).toBe(2);
+    });
+
+    it("toRef： plain object and ref property", () => {
+        const obj = reactive({
+            bar: 1,
+        });
+
+        const refBar = toRef(obj, "bar");
+
+        expect(refBar.value).toBe(1);
+
+        // 触发更新
+        let dummy;
+        effect(() => {
+            dummy = refBar.value;
+        });
+        expect(dummy).toBe(1);
+
+        // 修改 refBar -> 触发 else 分支 -> 修改 proxy -> 触发 trigger
+        refBar.value = 2;
+        expect(obj.bar).toBe(2);
+        expect(dummy).toBe(2);
+    });
+
+    it("toRefs", () => {
+        const state = reactive({
+            foo: 1,
+            bar: 2,
+        });
+
+        const { foo, bar } = toRefs(state);
+
+        expect(isRef(foo)).toBe(true);
+        expect(isRef(bar)).toBe(true);
+        expect(foo.value).toBe(1);
+        expect(bar.value).toBe(2);
+
+        // 修改 Ref -> 影响源对象
+        foo.value++;
+        expect(state.foo).toBe(2);
+
+        // 修改源对象 -> 影响 Ref
+        state.bar++;
+        expect(bar.value).toBe(3);
+
+        const plainObj = {
+            ate: 1
+        }
+
+        const { ate } = toRefs(plainObj);
+        expect(isRef(ate)).toBe(true);
+        expect(ate.value).toBe(1);
+
     });
 });
 

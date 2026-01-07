@@ -1,6 +1,6 @@
 import { hasChanged, isObject } from "@mini-vue/shared";
 import { ReactiveEffect, trackEffects, triggerEffects } from "./effect";
-import { reactive } from "./reactive";
+import { reactive, toRaw } from "./reactive";
 
 //packages/reactivity/src/ref.ts
 class RefImpl {
@@ -70,6 +70,57 @@ export function proxyRefs(objectWithRefs: any) {
             return Reflect.set(target, key, newValue, receiver)
         },
     })
+}
+
+class ObjectRefImpl {
+    public __v_isRef = true; // ref标志
+
+    constructor(
+        public _object: any,
+        public _key: any,
+    ) {
+
+    }
+
+    get value() {
+        /**
+         * 兼容普通对象
+         * 如果 _object 是 reactive，它getter里自动解包了，unRef(值) 还是 值
+         * 如果 _object 是普通对象，它getter返回 Ref，unRef(Ref) 变成 值。
+         */
+        const val = this._object[this._key]
+        return unRef(val)
+    }
+
+    set value(newValue: any) {
+        /**
+         * 兼容普通对象 setter 
+         * 普通对象没有 Proxy 帮我们拦截 setter
+         * 必须手动判断：如果原值是 Ref，我们要更新 Ref.value
+         */
+        const raw = toRaw(this._object)
+        const val = raw[this._key]
+
+        //普通对象和reactive中的ref变量 直接处理
+        if (isRef(val) && !isRef(newValue)) {
+            val.value = newValue
+        } else {
+            //普通对象和reactive中的普通变量；既有响应式又有正常变量的修改
+            this._object[this._key] = newValue
+        }
+    }
+}
+
+export function toRef(object: any, key: string) {
+    return new ObjectRefImpl(object, key)
+}
+
+export function toRefs(object: any) {
+    const ret: any = Array.isArray(object) ? new Array(object.length) : {}
+    for (const key in object) {
+        ret[key] = toRef(object, key)
+    }
+    return ret
 }
 
 export function trackRefValue(ref: any) {
