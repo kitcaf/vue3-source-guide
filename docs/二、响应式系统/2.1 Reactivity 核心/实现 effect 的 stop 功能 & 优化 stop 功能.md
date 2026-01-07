@@ -1,0 +1,141 @@
+---
+order: 4
+---
+
+# 实现 effect 的 stop 功能 & 优化 stop 功能
+
+`stop` 的本质是 **从依赖图谱 (Dependency Graph) 中物理删除对应副作用**
+
+现实场景：
+
+- 假设一个 Vue 组件被卸载 (Unmounted) 了，如果该组件对应的 `render effect` 还在依赖列表中，当数据变化时，它依然会尝试更新 DOM。但此时 DOM 节点已不存在，这会导致报错或无效计算。
+- 使用 `watchEffect` 监听数据，但业务逻辑中途不再需要监听了。如果不 `stop`，这个 Effect 对象会一直被 `Dep` (Set) 引用，垃圾回收器 (GC) 无法回收它，导致内存占用越来越高。
+
+**副作用本身就是对应ReactiveEffect该对象，因此为了使得副作用不执行，本质就是需要在依赖图谱中的最后一级中的dep找出对应的ReactiveEffect并删除**
+
+设计理念：**Stop应该是ReactiveEffect对象本身的行为**
+
+## 基础实现
+
+- 1.3节返回runner的同时也返回对应的**ReactiveEffect对象**
+
+```tsx
+export function effect(fn: Function) {
+    //创建ReactiveEffect
+    const _reactiveEffect = new ReactiveEffect(fn)
+    _reactiveEffect.run()
+
+    //返回_reactiveEffect中的run方法
+    //就是将_reactiveEffect.run的函数指针赋值就好了，因为run方法里面有this指向
+    //因此需要bind出来
+    const runner: any = _reactiveEffect.run.bind(_reactiveEffect)
+    //runner函数在挂载_reactiveEffect对象 --- 设计理念问题-函数式 (FP)
+    runner._effect = _reactiveEffect
+    return runner
+}
+```
+
+- ReactiveEffect**对象中增加所在dep，并加入stop方法**
+
+```tsx
+//ReactiveEffect（副作用）类 -- 存储在dep里面
+export class ReactiveEffect {
+    _fn: Function
+    dep?: Set<ReactiveEffect> | undefined
+
+    constructor(fn: Function) {
+        this._fn = fn
+    }
+
+    run() {
+        //记录当前创建的ReactiveEffect对象
+        activatEffect = this
+        //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
+        const result = this._fn()
+        //置为空
+        activatEffect = undefined
+
+        return result
+    }
+
+    stop() {
+        cleanupEffect(this)
+    }
+}
+
+function cleanupEffect(effect: ReactiveEffect) {
+    effect.dep!.delete(effect)
+    effect.dep = undefined
+}
+```
+
+- **trackEffects反向收集**
+
+```
+export function trackEffects(dep: Set<ReactiveEffect>) {
+    //activatEffect和判重
+    if (activatEffect && !dep.has(activatEffect)) {
+        // 1. 正向收集：Dep -> Effect
+        dep.add(activatEffect)
+        // 2. 【新增】反向收集：Effect -> Dep
+        activatEffect.dep = dep
+    }
+}
+```
+
+## 优化Stop
+
+上述的基础实现会导致两个主要问题：
+
+（1）ReactiveEffect和dep不是一个一对一的关系，**而是一个多对多的关系。实际上ReactiveEffect大多数是一个vue组件的模板重新渲染函数，无论依赖多少响应式变量，都是本组件模板的渲染函数的ReactiveEffect。或者说在(Vue 2/3) 不管模板里用了多少数据，整个组件只有一个 ReactiveEffect（组件级粒度）， 内存占用小，大幅减少了 ReactiveEffect对象的数量。**
+
+- **1个 Effect 对应 N 个 Dep**：一个组件（Effect）可能同时使用了 `name`, `age`, `title`（3 个数据）。所以这个 Effect 会出现在这 3 个数据的 `Dep` 列表里
+- **1 个 Dep 对应 N 个 Effect**：一个数据（如 `user.name`）可能同时被**“组件A”、“组件B”和“计算属性C”**使用。所以这个数据的 `Dep` 里会有 3 个不同的 Effect。
+
+（2）多次依赖问题，当一个 Effect 被 `stop` 后，用户依然可以手动调用 `runner()` 来执行函数。**但是**，这次执行 **不应该** 再触发依赖收集（因为已经显式停止响应式了）
+
+解决方法：改为deps数组收集、加入标记状态
+
+```tsx
+//ReactiveEffect（副作用）类 -- 存储在dep里面
+export class ReactiveEffect {
+    _fn: Function
+    deps: Set<ReactiveEffect>[] = []; //双向绑定 反向收集 deps
+    active: Boolean = true //标志位
+    onStop?: () => void //自定义回调
+
+    constructor(fn: Function) {
+        this._fn = fn
+    }
+
+    run() {
+        if (!this.active) {
+            return this._fn(); // 直接执行，不要导致设置activatEffect导致依赖收集
+        }
+
+        //（1）effect函数导致记录当前创建的ReactiveEffect对象（2）依赖更新时也会导致
+        activatEffect = this
+        //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
+        const result = this._fn()
+        //置为空
+        activatEffect = undefined
+
+        return result
+    }
+
+    stop() {
+        if (this.active) {
+            cleanupEffect(this)
+            if (this.onStop) this.onStop()
+            this.active = false
+        }
+    }
+}
+function cleanupEffect(effect: ReactiveEffect) {
+    effect.deps.forEach(dep => {
+        dep.delete(effect)
+    })
+    effect.deps.length = 0
+}
+
+```

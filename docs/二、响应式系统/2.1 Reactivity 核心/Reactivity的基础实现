@@ -1,0 +1,215 @@
+---
+order: 2
+---
+
+# Reactivity的基础实现
+
+## Effect 上下文
+
+**注：3.5版本activeEffect已经改名为activeSub，存在差异请理解**
+    
+在本节中，我们需要构建 Reactivity 系统的**运行时环境 (Runtime Context)** 和 **全局依赖存储图谱。先创建**创建packages/reactivity/src/effect .ts文件
+
+**1.定义全局变量 activeEffect、targetMap**
+
+activeEffect: 一个全局指针，指向当前正在执行栈中的 ReactiveEffect 实例
+targetMap: 存储依赖关系的全局 WeakMap。WeakMap可以具有较好的垃圾回收机制
+
+```tsx
+// packages/reactivity/src/effect.ts
+// ==========================================
+// 1. 全局状态定义
+// ==========================================
+// 指向当前正在执行的副作用实例
+let activeEffect: ReactiveEffect | undefined;
+// 依赖图谱 (The Dependency Graph)
+// 结构: WeakMap<Target(Object), Map<Key(String/Symbol), Set<ReactiveEffect>>>
+const targetMap = new WeakMap();
+```
+
+**2. 定义 `ReactiveEffect` 类**
+
+副作用的封装实体，它负责标准化副作用的执行流程：**设置环境 -> 执行函数 -> 清理环境**
+
+```tsx
+//ReactiveEffect类
+export class ReactiveEffect {
+    private _fn: Function
+
+    constructor(fn: Function) {
+        this._fn = fn
+    }
+
+    run() {
+        //记录当前创建的ReactiveEffect对象
+        activatEffect = this
+        //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
+        this._fn()
+        //置为空
+        activatEffect = undefined
+    }
+}
+```
+
+**3.定义effect入口函数**
+
+effect负责实例化 ReactiveEffect 并触发首次执行； run()才是核心触发依赖收集函数
+
+```tsx
+export function effect(fn: Function) {
+    //创建ReactiveEffect
+    const _reactiveEffect = new ReactiveEffect(fn)
+
+    _reactiveEffect.run() //
+}
+```
+
+## 依赖收集与派发更新算法
+
+本节实现**track** (读操作触发) 和 **trigger** (写操作触发)
+**1. 实现 track (依赖收集)**
+负责在 targetMap 中建立 Target（getter触发） -> Key -> Dep -> Effect 的映射关系。在响应式对象中的getter中调用
+
+注意事项：
+
+- 并不是所有的读取操作都需要被追踪（显式执行`effect(fn)才是需要执行收集的依赖`） `if (!activeEffect) return;`
+
+```tsx
+export function track(target: any, key: String | symbol) {
+    //初步判断 任意响应式的访问都会导致track，但是不是所有的都要收集依赖
+    //只有effect函数的执行才会被收集依赖
+    if (!activatEffect) return
+
+    //找到对应的depsMap-本质就是map
+    let depsMap = targetMap.get(target)
+    if (!depsMap) {
+        depsMap = new Map()
+        // 注意js中的对象是值传递，也就是target是内存对象的地址
+        targetMap.set(target, depsMap)
+    }
+
+    let dep = depsMap.get(key) //获得对应key中的dep
+    if (!dep) { //dp不存在
+        dep = new Set<ReactiveEffect>()
+        depsMap.set(key, dep)
+    }
+
+    //后面就是将activatEffect指向的ReactiveEffect加入到对应key的dep中
+    trackEffects(dep)
+}
+// 抽离具体的收集逻辑，方便后续复用
+export function trackEffects(dep: Set<ReactiveEffect>) {
+    //activatEffect和判重
+    if (activatEffect && !dep.has(activatEffect)) {
+        dep.add(activatEffect)
+    }
+}
+
+```
+
+**2. 实现 trigger (派发更新)**
+该函数负责根据 Target 和 Key 查找对应的 Dep，并执行其中的副作用。在响应式对象中的setter中调用
+
+```tsx
+/**
+ * trigger
+ * 响应式对象被setter时，触发更新对应的副作用
+ */
+export function trigger(target: any, key: String | symbol) {
+    const depsMap = targetMap.get(target)
+    if (!depsMap) return
+    const dep = depsMap.get(key)
+    //执行所有副作用
+    triggerEffects(dep)
+}
+
+export function triggerEffects(dep: Set<ReactiveEffect>) {
+    if (dep) {
+        for (const effect of dep) {//Set类型的for循环, of
+            effect.run()
+        }
+    }
+}
+```
+
+## 响应式代理拦截实现
+
+**文件位置：** packages/reactivity/src/reactive.ts
+
+实现响应式数据类型，利用 ES6 `Proxy` 对数据访问进行拦截，并调用上述的 `track` 和 `trigger`
+
+注意事项：
+
+- get不能写**const res = target[key]，解决嵌套依赖问题，无法收集真正依赖的属性。如下所示：**
+
+```tsx
+const user = {
+    name: "miniVue",
+    get fullName() {
+        // 当我们通过 Proxy 访问 fullName 时，这里的 this 是谁？
+        console.log("正在读取 fullName，此时 this 是：", this); 
+        return "miniVue " + this.name; 
+    }
+};
+
+export function reactive(raw: any) {
+    return new Proxy(raw, {
+        get(target, key, receiver) {
+            const res = target[key]
+            track(target, key)
+            return res
+        },
+     }
+}
+const proxy = reactive(user); // 假设这是你写的简易版 reactive
+effect(() => {console.log("依赖更新 " + proxyUser.fullName)})
+//返回结果：
+Proxy getter触发 fullName [object Object]
+正在读取 fullName，此时 this 是： { name: 'miniVue', fullName: [Getter] }
+依赖更新 hello miniVue
+//结论：可以看到getter触发只有一次也只有fullName，而依赖name并没有收集依赖，proxy.name的修改斌不会导致依赖更新
+```
+
+- set 不能写**target[key] = newValue；两个原因（1）同理，原型链上的 `set` (高级边缘情况)，导致可能会意外修改了原型链上的对象 （2）**`Proxy` 的 `set` 必须要返回一个bool值
+
+这也是为什么reactive需要使用**Reflect操作的原因**
+
+| **操作** | **为什么要用 Reflect？** | **核心目的** |
+| --- | --- | --- |
+| **get** | `Reflect.get(target, key, receiver)` | **1. 修正 `this` 指向 (核心！)**
+解决 getter 中访问其他属性导致**依赖收集丢失**的问题（即你说的嵌套依赖）。 |
+| **set** | `Reflect.set(target, key, value, receiver)` | **1. 规范返回值** (Proxy 要求返回 Boolean)。
+**2. 修正 `this` 指向** (如果 setter 里操作了其他属性)。 |
+
+**响应式代理拦截代码实现如下：**
+
+```tsx
+/**
+ * reactive 核心就是返回对对象的Proxy
+ * @param raw 
+ */
+export function reactive(raw: any) {
+    return new Proxy(raw, {
+        // target (Object): 原生对象 
+        // key (String | Symbol): 属性名
+        //  receiver (Object): 代理对象本身
+        get(target, key, receiver) {
+            // const res = target[key] 对象有get属性并且里面有this的嵌套依赖问题
+            // 保证每一个属性都会触发到代理的get保证收集成功依赖
+            console.log(`Proxy getter触发 ${key as String} ${target}`)
+            // const res = target[key]
+            const res = Reflect.get(target, key, receiver)
+            track(target, key)
+            return res
+        },
+
+        set(target, key, newValue, receiver) {
+            console.log(`Proxy setter触发 ${key as String} ${target}`)
+            // target[key] = newValue
+            const res = Reflect.set(target, key, newValue, receiver)
+            trigger(target, key)
+            return true
+        }
+    })
+}
+```

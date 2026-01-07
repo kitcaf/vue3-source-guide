@@ -2,15 +2,13 @@
 order: 1
 ---
 
-# Reactivity 核心
-
-## 1.1 reactivity 的核心流程
+# reactivity 的核心流程
 
 在本章中我们经常看到一个单词Effect（副作用）；**Effect（副作用）** 指的是函数在执行过程中对外部环境造成的变更（**后面会看到一个`Effect(fn)` 函数**，**其中fn入参函数就是副作用**）
 
 在 Vue 中，**渲染 DOM** 本质上就是一种副作用。此外，`computed` 计算属性、`watch` 回调、网络请求等也是副作用。Vue 的 Reactivity 系统的核心职责就是：**精确控制这些副作用何时执行、如何执行。**
 
-### 设计模式
+# 设计模式
 
 Vue 的响应式系统在设计模式上，属于典型的 **观察者模式（Observer Pattern）**，但它具具备一个非常特殊的属性：**透明性（Transparency）**
 
