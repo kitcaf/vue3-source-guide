@@ -1,0 +1,254 @@
+---
+order: 5
+---
+
+# effect防止死循环（无限递归）
+
+**回到ReactiveEffect类**
+
+```
+export class ReactiveEffect {
+    private _fn: Function
+    deps: Set<ReactiveEffect>[] = []; //双向绑定 反向收集 deps
+    active: Boolean = true //标志位
+    onStop?: () => void //自定义回调
+    run() {
+        if (!this.active) {
+            return this._fn(); // 直接执行，不要导致设置activatEffect导致依赖收集
+        }
+
+        //（1）effect函数 （2）依赖更新 记录当前创建的ReactiveEffect对象
+        activatEffect = this
+        //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
+        const result = this._fn()
+        //置为空
+        activatEffect = undefined
+
+        return result
+    }
+}
+```
+
+ReactiveEffect 类中的run函数会在下面两种方式中调用：
+
+- effect函数
+- 依赖更新 - 副作用依赖函数执行run
+
+两种方式其实都会导致`activatEffect = this`，也就是说这之后`activatEffect` 处于激活，**是否会导致什么问题呢？同一个同步执行周期内**，先触发了 **Getter (Track)** 建立了“自己依赖自己”的关系，紧接着触发了 **Setter (Trigger)** 导致自己重新执行，**从而形成了死循环**
+**一句话说**：**effect函数的参数函数既有响应式对象读取和设置同时存在（不要在effect中对响应式变量修改，但是无法避免）。如下所示：**
+
+```tsx
+const user = reactive({ age: 10 })
+effect(() => {
+    user.age++ //等同于 count = count + 1
+})
+//RangeError: Maximum call stack size exceeded。直接报错
+```
+
+effect执行run函数，先是user.age收集effect依赖，然后user.age++，导致触发依赖又导致effect副作用run函数执行，又收集依赖… **直接递归报栈空间了，arr.push()这种代码也是类似。本质上其实分为下面的两种get set同时触发类型，后面介绍为什么会有数组变异递归死循环类型**
+
+- **数组变异递归死循环** obj.arr.push(1)
+- **通用递归** obj.conut++,  用户代码 `count++` 导致的显式死循环
+
+## 通用递归**死循环**
+
+回想一下整个过程，从用户角度考虑：**其实就是想一开始obj.conut 加一次，然后依赖改变再加一次**
+
+`effect` 运行 -> 读 `count` (收集自己) -> 改 `count` (触发自己) -> `effect` 重新运行 -> ... **死循环**
+
+```tsx
+run() {
+        if (!this.active) {
+            return this._fn(); // 直接执行，不要导致设置activatEffect导致依赖收集
+        }
+        
+        //（1）effect函数 （2）依赖更新 记录当前创建的ReactiveEffect对象
+        activatEffect = this
+        //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
+        const result = this._fn()
+        //置为空
+        activatEffect = undefined
+
+        return result
+    }
+```
+
+因此其实就解决方式就是Trigger阶段显示的判断：现在唤醒的`effect` 和之前唤醒的`effect` 是否一致
+
+- **修改triggerEffects函数**
+
+```tsx
+export function triggerEffects(dep: Set<ReactiveEffect>) {
+    if (dep) {
+        for (const effect of dep) {//Set类型的for循环, of
+            if (effect !== activatEffect) { //加入判断针对通用递归**死循环**
+                if (effect.scheduler)
+                    effect.scheduler() //控制权交换给用户
+                else effect.run()
+            }
+        }
+    }
+}
+```
+
+## 数组变异递归**死循环**
+
+我们从比较常见的业务代码看
+
+```tsx
+const dataSource = reactive({ newMsg: null }); // 数据源 A
+const msgList = reactive([]); // 数据源 B (数组)
+
+effect(() => {
+    if (dataSource.newMsg) {
+        msgList.push(dataSource.newMsg);
+    }
+});
+```
+
+**这种方式和上一种方式有什么不同呢**? 其实上一种方式的方法已经解决了这个问题(已经不会发生**死循环**)
+
+目前的情况： `push` 内部读取 `history.length` -> **`history.length` 被 effect 收集为依赖 - >**  `push` 完成插入，修改 `history.length` - > 通知情况
+
+从业务角度：它是不满足用户的期待。c**ount++从用户角度是显式依赖，用户明确知道自己依赖了 `count`。而数组的问题在于**msgList.push() 会隐式读取length导致依赖被收集，**用户表达的只是修改数据**
+
+| **特性** | **普通死循环 (count++)** | **数组变异死循环 (arr.push)** |
+| --- | --- | --- |
+| **触发原因** | 用户显式写了 `count` (读) | 用户写了 `push`，但在**底层 JS 引擎内部**隐式读了 `.length` |
+| **依赖合理性** | **合理**。代码确实依赖 `count` 的值 | **不合理**。用户**只表达写数据**，并不关心 `length` 是多少 |
+| **副作用** | 无（依赖关系是干净的） | **依赖污染**。Effect 意外地订阅了 `length` 的变化 |
+
+**解决方式：**
+
+- 加入手动停止收集依赖函数
+- 对数组length属性的访问设置取消依赖
+
+**实现：**
+
+- 修改 `effect.ts` ，新增标志位 `shouldTrack` 来控制 `track` 函数
+
+```tsx
+let shouldTrack = true; //全局开关，默认允许收集
+
+export function pauseTracking() {
+    shouldTrack = false;
+}
+
+export function enableTracking() {
+    shouldTrack = true;
+}
+
+export function track(target: any, key: String | symbol) {
+    //初步判断 任意响应式的访问都会导致track，但是不是所有的都要收集依赖
+    //只有effect函数的执行才会被收集依赖
+    if (!shouldTrack || activatEffect === undefined) return
+    ...
+}
+```
+
+- 新建 **`arrayInstrumentations.ts` (**半路拦截)：对响应式数组对象进行拦截，**返回特定方法；不要全局修改Array.prototype的方法，会导致全局污染（非响应式数组也被改变了）**
+
+```tsx
+// src/reactivity/baseHandlers.ts
+
+// 1. 定义拦截器对象-- 里面就是拦截后返回的函数
+const arrayInstrumentations: Record<string, Function> = {};
+
+// 2. 需要拦截的方法列表
+const instrumentations = ['push', 'pop', 'shift', 'unshift', 'splice'];
+
+instrumentations.forEach((key) => {
+	// 拿到原始方法 --- 原始方法也必须执行
+  const originalMethod = Array.prototype[key];
+	
+	// 调用拦截器对象的方法 （1）this: 响应式对象 proxy （2）正常参数 
+	// a = reactivate([]), a.push(1) : getter拦截返回arrayInstrumentations['push']
+	// 变成了调用a.arrayInstrumentations['push'](1)。那么 调用这个函数的proxy
+  arrayInstrumentations[key] = function (this: any, ...args: any[]) {
+	  // A. 关灯
+    pauseTracking();
+
+    // B. 【执行原生方法】
+    // 这里的 this 是 Proxy --- 因为会在getter中拦截返回函数，我们需要转为原始对象 (toRaw)
+    // 这样操作更纯粹，避免在操作过程中触发不必要的 Proxy 拦截
+    const res = originalMethod.apply(toRaw(this), args);
+
+    // C. 开灯
+    enableTracking();
+    
+    // D. 返回结果
+    return res;
+  };
+});
+```
+
+- 在getter中**加入数组特定方法拦截, 返回拦截器对象函数**
+
+```tsx
+export function createGetter(isReadonly = false, shallow = false) {
+    // target (Object): 原生对象 
+    // key (String | Symbol): 属性名
+    //  receiver (Object): 代理对象本身
+    return function getter(target: any, key: string | symbol, receiver: any) {
+				....
+        //数组特定方法的判断
+        if (isArray(target) && hasOwn(instrumentations, key)) {
+            return arrayInstrumentations[key]
+        }
+        const res = Reflect.get(target, key, receiver)
+        ...
+    }
+}
+```
+
+但是如果只是通过shouldTrack来设置是不够的，用户是可以自定义pauseTracking操作的。因此如果只是这样的话会导致依赖收集错误（**依赖取消收集域错误**）, 如下所示：**list.push操作对原本应该暂停收集依赖的区域的后半段打开了依赖收集**
+
+```tsx
+const list = reactive([]);     // 数组
+const user = reactive({ age: 10 }); // 普通对象
+let runCount = ref(0);
+
+// 用户想自定义区域依赖收集 -- 只想收集runCount的订阅 
+effect(() => {
+   runCount ++;
+   pauseTracking(); // 【状态变更】 shouldTrack = false
+
+   // ====================================================
+   // 步骤 A：调用数组 push
+   // push 实现内部逻辑是：
+   // 1. pauseTracking() -> shouldTrack = false
+   // 2. super.push()
+   // 3. enableTracking() -> shouldTrack = true  <-- !!!  这里强制开灯了
+   list.push(1); 
+
+   // ====================================================
+   // 步骤 B：访问另一个响应式对象
+   // 预期：因为最外层调用了 pauseTracking，这里不应该收集依赖。
+   // 实际：因为步骤 A 里的 push 结束时强制把开关打开了，这里变成了可收集！
+   // ====================================================
+   console.log(user.age);
+            
+   // 恢复外层暂停
+   enableTracking();
+}); 
+```
+
+**本质上造成原因**外层作用存在：shouldTrack = false，因此内层的enableTracking不能轻易修改shouldTrack 变量。解决方式通过栈来维护：**新建一个**`trackStack` 变量存储**表示上一个的真实状态**
+
+- pauseTracking将上一个状态**shouldTrack**存**入栈**中，同时可以直接修改shouldTrack=false
+- enableTracking，先**出栈**，对出栈的值a **分类判断**
+    - 如果值为underfind, 表示enableTracking多调用了，shouldTrack=true
+    - 正常值，**shouldTrack = a**
+
+```tsx
+export function pauseTracking() {
+    trackStack.push(shouldTrack) //存储上一个状态
+    shouldTrack = false;
+}
+
+export function enableTracking() {
+    let last = trackStack.pop()
+    // shouldTrack始终等于last，除非特殊情况enableTracking导致的栈空取值
+    shouldTrack = trackStack.length === 0 ? true : last!;
+}
+```
