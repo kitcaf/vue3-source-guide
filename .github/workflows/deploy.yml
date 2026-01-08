@@ -2,7 +2,7 @@ name: Deploy Docs Site
 
 on:
   push:
-    branches: [main] # 再次确认你的分支名
+    branches: [main]
 
 permissions:
   contents: read
@@ -16,39 +16,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 1. 第一步：先安装 pnpm (关键修复)
-      # 使用官方推荐的 action，指定版本 9
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
-      # 2. 第二步：再配置 Node 环境
-      # 此时 pnpm 已经装好了，setup-node 才能正常读取 pnpm 缓存
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm' # 开启缓存，加速构建
+          cache: 'npm' # 关键修改：这里改成了 npm
 
-      # 3. 安装依赖 (使用 pnpm)
+      # 关键修改：删除了 pnpm setup 步骤，直接安装
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci # npm ci 是 CI 环境专用的安装命令，比 install 更快更稳
 
-      # 4. 构建
+      # 关键修改：运行构建
       - name: Build Docs
-        run: pnpm docs:build
+        run: npm run docs:build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 5. 上传构建产物 (已修复 v3 版本报错)
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v3 # 已修正版本
         with:
           path: docs/.vitepress/dist
 
-      # 6. 部署 (已修复 v4 版本报错)
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4 # 已修正版本
