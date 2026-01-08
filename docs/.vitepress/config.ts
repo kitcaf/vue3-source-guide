@@ -7,6 +7,7 @@ export default defineConfig({
 
     base: '/vue3-source-guide/',
 
+
     themeConfig: {
         // 顶部导航
         nav: [
@@ -30,7 +31,7 @@ export default defineConfig({
                 items: [
                     {
                         text: '2.1 Reactivity 核心',
-                        collapsed: true, // 子章节默认折叠，保持整洁
+                        collapsed: false, // 子章节默认折叠，保持整洁
                         items: [
                             { text: '核心流程概述', link: '/二、响应式系统/2.1 Reactivity 核心/2.1.1 Reactivity 核心' },
                             { text: '基础实现', link: '/二、响应式系统/2.1 Reactivity 核心/2.1.2 Reactivity的基础实现' },
@@ -42,7 +43,7 @@ export default defineConfig({
                     },
                     {
                         text: '2.2 扩展响应式对象',
-                        collapsed: true,
+                        collapsed: false,
                         items: [
                             { text: '工程化重构', link: '/二、响应式系统/2.2 扩展响应式对象/2.2.1 工程化重构' },
                             { text: 'Readonly 功能', link: '/二、响应式系统/2.2 扩展响应式对象/2.2.2 实现 readonly 功能' },
@@ -55,7 +56,7 @@ export default defineConfig({
                     },
                     {
                         text: '2.3 Ref 系统',
-                        collapsed: true,
+                        collapsed: false,
                         items: [
                             { text: 'Ref 基础功能', link: '/二、响应式系统/2.3 Ref 系统/2.3.1 实现 ref 功能' },
                             { text: 'isRef & unRef', link: '/二、响应式系统/2.3 Ref 系统/2.3.2 实现 isRef 和 unRef 功能' },
@@ -65,7 +66,7 @@ export default defineConfig({
                     },
                     {
                         text: '2.4 Computed',
-                        collapsed: true,
+                        collapsed: false,
                         items: [
                             { text: '基础实现', link: '/二、响应式系统/2.4 Computed/2.4.1 基础实现' },
                             { text: '矛盾的选择', link: '/二、响应式系统/2.4 Computed/2.4.2 Computed 矛盾的选择' },
