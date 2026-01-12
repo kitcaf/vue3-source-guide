@@ -50,9 +50,13 @@
 - 三、运行时
   - 3.1 概述
     - [运行时概述](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.1%20%E6%A6%82%E8%BF%B0/3.1%20%E8%BF%90%E8%A1%8C%E6%97%B6%E6%A6%82%E8%BF%B0%E3%80%90%E9%87%8D%E8%A6%81%E3%80%91.md)
+  - 3.2 初始化流程
+    - [runtime-core 流程概览 & `createApp` 入口](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.1%20runtime-core%20%E6%B5%81%E7%A8%8B%E6%A6%82%E8%A7%88%20&%20createApp%20%E5%85%A5%E5%8F%A3.md)
+    - [实现 `createRenderer` (渲染器工厂函数)](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.2%20%E5%AE%9E%E7%8E%B0%20createRenderer.md)
+    - [实现 h 函数 & 完善 VNode (ShapeFlags)](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.3%20%E5%AE%9E%E7%8E%B0%20h%20%E5%87%BD%E6%95%B0%20&%20%E5%AE%8C%E5%96%84%20VNode%20(ShapeFlags).md)
 - [index](docs/index.md)
 
-<!--tocEnd:offset=32-->
+<!--tocEnd:offset=36-->
 
 ## 致谢 | Acknowledgements
 
