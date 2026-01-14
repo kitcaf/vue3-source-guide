@@ -1,4 +1,4 @@
-export const enum shapeFlags {
+export const enum ShapeFlags {
     //001 HTML 元素
     ELEMENT = 1,
     //010(左移一位) 有状态组件 (平时写的普通组件)

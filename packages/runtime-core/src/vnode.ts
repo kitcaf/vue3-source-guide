@@ -1,7 +1,7 @@
-import { shapeFlags } from "packages/shared/src/shapeFlags"
-import { Component } from "./component"
+import { ShapeFlags } from "packages/shared/src/shapeFlags"
+import { ComponentOptions } from "./component"
 
-export type vNodeType = string | Component
+export type vNodeType = string | ComponentOptions
 
 export interface VNode {
     type: vNodeType,
@@ -14,34 +14,34 @@ export interface VNode {
 
 /**
  * createVNode
- * @param type // （不要认为只是一个字符串）组件对象 或 HTML 标签名 (如 'div')
+ * @param type //（不要认为只是一个字符串）组件对象 或 HTML 标签名 (如 'div')
  * @param props // 属性
- * @param children // 子节点
+ * @param children // 子节点（可以是HTML元素也可以是组件）
  */
 export function createVNode(
     type: vNodeType,
     props?: any,
-    children?: string | any[]
+    children?: string | any[] | null
 ): VNode {
     const vnode: VNode = {
         type,
         props,
         children: children ?? null,
         shapeFlag: getShapeFlag(type),
-        el: null // 将来挂载的真实节点,
+        el: null //
     }
 
     // 叠加状态
     if (typeof children === "string") {
-        vnode.shapeFlag |= shapeFlags.TEXT_CHILDREN
+        vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN
     } else if (Array.isArray(children)) {
-        vnode.shapeFlag |= shapeFlags.ARRAY_CHILDREN
+        vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN
     }
     return vnode
 }
 
 function getShapeFlag(type: any) {
     return typeof type === 'string'
-        ? shapeFlags.ELEMENT
-        : shapeFlags.STATEFUL_COMPONENT
+        ? ShapeFlags.ELEMENT
+        : ShapeFlags.STATEFUL_COMPONENT
 }

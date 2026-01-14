@@ -1,4 +1,5 @@
 import { createVNode } from "./vnode"
+import { type VNode } from "./vnode"
 
 /**
  * createAppAPI:
@@ -7,7 +8,7 @@ import { createVNode } from "./vnode"
  * * @param render - 由 Renderer 传入的具体渲染函数
  */
 export function createAppAPI(
-    render: { (vnode: any, container: any): void; (arg0: { type: any; props: any; children: any; el: null }, arg1: any): void }
+    render: (vnode: VNode, container: Element) => void
 ) {
     return function createApp(rootComponent: any) {
         return {

@@ -1,7 +1,84 @@
-export interface Component {
-    render?: Function, //组件的render
-    setup?: Function, // vue模板中script脚本中的返回的setup(或者语法糖)
-    [key: string]: any, //允许其他类型
+import { type VNode } from "./vnode";
+
+//render的类型，InternalRenderFunction = () => VNode;也可以
+//但是因为render函数还会挂载一些额外的属性
+//因此render函数就写成它的对象形式
+export interface InternalRenderFunction {
+    // 有的时候还有ctx参数，返回必须是 VNode
+    (ctx?: any): VNode
 }
 
+// 组件配置 (即用户写的对象: { setup, render, ... } - 别Complier转换后的)
+export interface ComponentOptions {
+    //组件的render
+    render?: InternalRenderFunction,
+    // vue模板中script脚本中的返回的setup(或者语法糖) - 是一定要执行的
+    setup?: (props?: any, ctx?: any) => any,
+    //允许其他类型
+    [key: string]: any,
+}
 
+// 组件实例 (内部使用的组件对象)
+export interface ComponentInternalInstance {
+    // --- 核心属性 ---
+    vnode: VNode; // 当前组件的 vnode
+    type: ComponentOptions; // 组件配置对象
+    // --- 状态相关 ---
+    setupState: any;        // setup 的返回值
+    // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
+    render: InternalRenderFunction | null;
+}
+
+export function createComponentInstance(vnode: VNode): ComponentInternalInstance {
+    const instance: ComponentInternalInstance = {
+        vnode,
+        type: vnode.type as ComponentOptions,
+        setupState: {},
+        render: null
+    }
+    return instance
+}
+
+export function setupComponent(instance: ComponentInternalInstance) {
+    // TODO: initProps, initSlots (后续章节实现)
+    // 暂且只处理状态组件
+    setupStatefulComponent(instance)
+}
+
+export function setupStatefulComponent(instance: ComponentInternalInstance) {
+    const Component = instance.type;
+    const { setup } = Component
+
+    if (setup) {
+        const setupResult = setup()
+        handleSetupResult(instance, setupResult)
+    } else {
+        finishComponentSetup(instance)
+    }
+}
+
+/**
+ * 
+ * @param instance 
+ * @param setupResult 
+ */
+export function handleSetupResult(instance: ComponentInternalInstance, setupResult: any) {
+    // setup 可能返回对象 (State) 
+    if (typeof setupResult === 'object') {
+        instance.setupState = setupResult
+    }
+    // 第二类组件render函数
+    else if (typeof setupResult === 'function') {
+        instance.render = setupResult
+    }
+    finishComponentSetup(instance)
+}
+
+export function finishComponentSetup(instance: ComponentInternalInstance) {
+    const Component = instance.type;
+
+    // 如果 instance 上还没有 render，赋值 Component 里的 render
+    if (!instance.render) {
+        instance.render = Component.render ?? null;
+    }
+}
