@@ -4,7 +4,7 @@ import { createElement, insert } from "./nodeOps";
 import { patchProp } from "./patchProp";
 
 // --- 组装渲染器 ---
-const rendererOptions: RendererOptions = {
+export const rendererOptions: RendererOptions = {
     createElement,
     patchProp,
     insert
@@ -20,5 +20,7 @@ export function createApp(rootComponent: ComponentOptions) {
 }
 
 export * from "@mini-vue/runtime-core"
+export * from "./nodeOps"
+export * from "./patchProp"
 
 

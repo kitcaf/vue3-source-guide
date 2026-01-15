@@ -9,7 +9,7 @@ export default defineConfig({
     resolve: {
         alias: [
             {
-                find: /@mini-vue\/(\w+)/,
+                find: /@mini-vue\/([\w-]+)/,
                 replacement: path.resolve(__dirname, 'packages/$1/src')
             }
         ]
