@@ -1,30 +1,7 @@
 import { ComponentOptions } from "@mini-vue/runtime-core";
 import { RendererOptions, createRenderer } from "@mini-vue/runtime-core";
-
-export function createElement(type: string): HTMLElement {
-    return document.createElement(type)
-}
-
-export function patchProp(
-    el: HTMLElement,
-    key: string,
-    preValue: any,
-    nextValue: any): void {
-    // 处理普通属性
-    // 如果 nextVal 是 null/undefined，说明要删除属性
-    if (nextValue == null) {
-        el.removeAttribute(key)
-    } else {
-        el.setAttribute(key, nextValue)
-    }
-}
-
-export function insert(
-    el: HTMLElement,
-    parent: HTMLElement,
-    anchor?: any): void {
-    parent.appendChild(el)
-}
+import { createElement, insert } from "./nodeOps";
+import { patchProp } from "./patchProp";
 
 // --- 组装渲染器 ---
 const rendererOptions: RendererOptions = {

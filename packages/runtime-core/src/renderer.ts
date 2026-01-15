@@ -41,13 +41,16 @@ export function createRenderer(options: RendererOptions) {
     // contianer 容器 - 就是挂载的div
     function patch(n1: VNode | null, n2: VNode, container: HTMLElement) {
         const { shapeFlag } = n2
-        // 处理组件vNode
-        if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-            processComponent(n1, n2, container)
-        }
-        // 处理Element vNode
-        if (shapeFlag & ShapeFlags.ELEMENT) {
-            if (!n1) mountElement(n2, container) // 挂载
+        //挂载阶段
+        if (!n1) {
+            // 处理组件vNode
+            if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+                processComponent(n1, n2, container)
+            }
+            // 处理Element vNode
+            if (shapeFlag & ShapeFlags.ELEMENT) {
+                if (!n1) mountElement(n2, container) // 挂载
+            }
         }
     }
 
@@ -65,7 +68,7 @@ export function createRenderer(options: RendererOptions) {
             mountChildren(children as VNode[], el)
         }
 
-        // 处理属性
+        // 处理属性（初次挂载-preVal都是空的）
         const { props } = vnode
         for (const key in props) {
             const val = props[key]
