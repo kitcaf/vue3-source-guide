@@ -3,8 +3,31 @@ import { createAppAPI } from "./apiCreateApp"
 import { type VNode } from "./vnode";
 import { ComponentInternalInstance, createComponentInstance, setupComponent } from './component';
 
+export interface RendererOption {
+    /**
+     * 创建DOM方法
+     */
+    creatElement(type: string): Element
+    /**
+     * 向DOM元素中插入属性方法
+     */
+    patchProp(el: Element, key: string, preValue: any, nextValue: any): void
+    /**
+     * 向父元素插入子元素方法
+     */
+    insert(el: Element, parent: Element, anchor?: any): void
+}
 
-export function createRenderer(option: any) {
+export function createRenderer(options: RendererOption) {
+    // 此时闭包的好处体现出来了
+    // createRenderer被调用一次，在整个生命周期构建了一个独立的作用域
+    // 里面的函数可以调用统一的一个options方法
+    const {
+        creatElement: hostCreateElement,
+        patchProp: hostPatchProp,
+        insert: hostInsert
+    } = options
+
     // render: 渲染入口 调用 patch，处理挂载逻辑
     function render(vnode: VNode, container: Element) {
         patch(null, vnode, container)
@@ -24,14 +47,44 @@ export function createRenderer(option: any) {
         }
         // 处理Element vNode
         if (shapeFlag & ShapeFlags.ELEMENT) {
-            console.log("处理 Element");
+            if (!n1) mountElement(n2, container) // 挂载
         }
+    }
+
+    function mountElement(vnode: VNode, container: Element) {
+        // 创建真实DOM
+        const el = hostCreateElement(vnode.type as string)
+        vnode.el = el as Element
+
+        const { shapeFlag, children } = vnode
+        // 处理子节点
+        if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+            el.textContent = children as string
+        }
+        else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+            mountChildren(children as VNode[], el)
+        }
+
+        // 处理属性
+        const { props } = vnode
+        for (const key in props) {
+            const val = props[key]
+            hostPatchProp(el, key, null, val)
+        }
+        //插入到容器中
+        hostInsert(el, container)
+    }
+
+    function mountChildren(children: VNode[], container: Element) {
+        children.forEach(vnode => {
+            patch(null, vnode, container)
+        })
     }
 
     //  --- 组件处理流程 ---
     function processComponent(n1: VNode | null, n2: VNode, container: Element) {
         // 表示挂载
-        if (n1 == null) mountComponent(n2, container)
+        if (!n1) mountComponent(n2, container)
     }
 
     function mountComponent(initialVNode: VNode, container: Element) {
