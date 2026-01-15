@@ -8,7 +8,7 @@ export interface VNode {
     props: any, // 参数（透传）
     children: string | any[] | null,
     shapeFlag: number,
-    el: Element | null
+    el: HTMLElement | null
 
 }
 

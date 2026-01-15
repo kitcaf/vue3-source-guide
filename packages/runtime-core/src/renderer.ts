@@ -7,15 +7,15 @@ export interface RendererOption {
     /**
      * 创建DOM方法
      */
-    creatElement(type: string): Element
+    createElement(type: string): HTMLElement
     /**
      * 向DOM元素中插入属性方法
      */
-    patchProp(el: Element, key: string, preValue: any, nextValue: any): void
-    /**
+    patchProp(el: HTMLElement, key: string, preValue: any, nextValue: any): void
+    /**·
      * 向父元素插入子元素方法
      */
-    insert(el: Element, parent: Element, anchor?: any): void
+    insert(el: HTMLElement, parent: HTMLElement, anchor?: any): void
 }
 
 export function createRenderer(options: RendererOption) {
@@ -23,13 +23,13 @@ export function createRenderer(options: RendererOption) {
     // createRenderer被调用一次，在整个生命周期构建了一个独立的作用域
     // 里面的函数可以调用统一的一个options方法
     const {
-        creatElement: hostCreateElement,
+        createElement: hostCreateElement,
         patchProp: hostPatchProp,
         insert: hostInsert
     } = options
 
     // render: 渲染入口 调用 patch，处理挂载逻辑
-    function render(vnode: VNode, container: Element) {
+    function render(vnode: VNode, container: HTMLElement) {
         patch(null, vnode, container)
     }
 
@@ -39,7 +39,7 @@ export function createRenderer(options: RendererOption) {
     // 表现形式上是节点但有children变量本质就是VNode树
     // n2 新VNode（虚拟节点树）
     // contianer 容器 - 就是挂载的div
-    function patch(n1: VNode | null, n2: VNode, container: Element) {
+    function patch(n1: VNode | null, n2: VNode, container: HTMLElement) {
         const { shapeFlag } = n2
         // 处理组件vNode
         if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
@@ -51,10 +51,10 @@ export function createRenderer(options: RendererOption) {
         }
     }
 
-    function mountElement(vnode: VNode, container: Element) {
+    function mountElement(vnode: VNode, container: HTMLElement) {
         // 创建真实DOM
         const el = hostCreateElement(vnode.type as string)
-        vnode.el = el as Element
+        vnode.el = el as HTMLElement
 
         const { shapeFlag, children } = vnode
         // 处理子节点
@@ -75,19 +75,19 @@ export function createRenderer(options: RendererOption) {
         hostInsert(el, container)
     }
 
-    function mountChildren(children: VNode[], container: Element) {
+    function mountChildren(children: VNode[], container: HTMLElement) {
         children.forEach(vnode => {
             patch(null, vnode, container)
         })
     }
 
     //  --- 组件处理流程 ---
-    function processComponent(n1: VNode | null, n2: VNode, container: Element) {
+    function processComponent(n1: VNode | null, n2: VNode, container: HTMLElement) {
         // 表示挂载
         if (!n1) mountComponent(n2, container)
     }
 
-    function mountComponent(initialVNode: VNode, container: Element) {
+    function mountComponent(initialVNode: VNode, container: HTMLElement) {
         const instance = createComponentInstance(initialVNode)
 
         // 执行setup,此时instance.render已经被成功赋值了
@@ -100,7 +100,7 @@ export function createRenderer(options: RendererOption) {
     function setupRenderEffect(
         instance: ComponentInternalInstance,
         initialVNode: VNode,
-        container: Element) {
+        container: HTMLElement) {
         // 返回改组件的描述ui Vnode, 它本质也是vNode继续递归
         const subTreeVNode = instance.render!()
 

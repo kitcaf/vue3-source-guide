@@ -9,12 +9,12 @@ import { type VNode } from "./vnode"
  * 依据是闭包进行，将createAppAPI把runtime-core中的核心render函数作为参数
  */
 export function createAppAPI(
-    render: (vnode: VNode, container: Element) => void
+    render: (vnode: VNode, container: HTMLElement) => void
 ) {
     return function createApp(rootComponent: any) {
         return {
             // 核心挂载方法 rootContainer 挂载的DOM对象
-            mount(rootContainer: Element) {
+            mount(rootContainer: HTMLElement) {
                 // 1. rootComponent 转换为虚拟节点
                 const vnode = createVNode(rootComponent)
                 // 2. 触发渲染核心，将vnode + rootContainer构成
