@@ -12,7 +12,7 @@ export function createAppAPI(
     render: (vnode: VNode, container: HTMLElement) => void
 ) {
     return function createApp(rootComponent: any) {
-        return {
+        return { // 返回一个对象，还是闭包
             // 核心挂载方法 rootContainer 挂载的DOM对象
             mount(rootContainer: HTMLElement) {
                 // 1. rootComponent 转换为虚拟节点

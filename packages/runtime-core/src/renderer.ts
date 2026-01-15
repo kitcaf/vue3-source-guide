@@ -3,7 +3,7 @@ import { createAppAPI } from "./apiCreateApp"
 import { type VNode } from "./vnode";
 import { ComponentInternalInstance, createComponentInstance, setupComponent } from './component';
 
-export interface RendererOption {
+export interface RendererOptions {
     /**
      * 创建DOM方法
      */
@@ -18,7 +18,7 @@ export interface RendererOption {
     insert(el: HTMLElement, parent: HTMLElement, anchor?: any): void
 }
 
-export function createRenderer(options: RendererOption) {
+export function createRenderer(options: RendererOptions) {
     // 此时闭包的好处体现出来了
     // createRenderer被调用一次，在整个生命周期构建了一个独立的作用域
     // 里面的函数可以调用统一的一个options方法

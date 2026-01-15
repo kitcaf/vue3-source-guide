@@ -1,0 +1,47 @@
+import { ComponentOptions } from "@mini-vue/runtime-core";
+import { RendererOptions, createRenderer } from "@mini-vue/runtime-core";
+
+export function createElement(type: string): HTMLElement {
+    return document.createElement(type)
+}
+
+export function patchProp(
+    el: HTMLElement,
+    key: string,
+    preValue: any,
+    nextValue: any): void {
+    // 处理普通属性
+    // 如果 nextVal 是 null/undefined，说明要删除属性
+    if (nextValue == null) {
+        el.removeAttribute(key)
+    } else {
+        el.setAttribute(key, nextValue)
+    }
+}
+
+export function insert(
+    el: HTMLElement,
+    parent: HTMLElement,
+    anchor?: any): void {
+    parent.appendChild(el)
+}
+
+// --- 组装渲染器 ---
+const rendererOptions: RendererOptions = {
+    createElement,
+    patchProp,
+    insert
+}
+
+// 导出基于 DOM 的 createApp
+export function createApp(rootComponent: ComponentOptions) {
+    // 调用 core 的 createRenderer，传入 DOM 特有的 API
+    const renderer = createRenderer(rendererOptions);
+
+    // 返回 mount 方法
+    return renderer.createApp(rootComponent);
+}
+
+export * from "@mini-vue/runtime-core"
+
+
