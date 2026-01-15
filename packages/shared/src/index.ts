@@ -1,3 +1,5 @@
+export * from "../src/shapeFlags";
+
 export const extend = Object.assign
 
 // 判断是否是对象

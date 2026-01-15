@@ -3,7 +3,8 @@ import path from 'path'
 
 export default defineConfig({
     test: {
-        globals: true, // 开启 describe, it, expect 全局变量
+        globals: true, // 开启 describe, it, expect 全局变量,
+        environment: 'happy-dom'
     },
     resolve: {
         alias: [

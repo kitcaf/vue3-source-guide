@@ -1,4 +1,4 @@
-import { ShapeFlags } from "packages/shared/src/shapeFlags"
+import { ShapeFlags } from "@mini-vue/shared"
 import { ComponentOptions } from "./component"
 
 export type vNodeType = string | ComponentOptions

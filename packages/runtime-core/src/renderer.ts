@@ -1,4 +1,4 @@
-import { ShapeFlags } from 'packages/shared/src/shapeFlags';
+import { ShapeFlags } from "@mini-vue/shared"
 import { createAppAPI } from "./apiCreateApp"
 import { type VNode } from "./vnode";
 import { ComponentInternalInstance, createComponentInstance, setupComponent } from './component';
@@ -18,9 +18,13 @@ export function createRenderer(option: any) {
     // contianer 容器 - 就是挂载的div
     function patch(n1: VNode | null, n2: VNode, container: Element) {
         const { shapeFlag } = n2
-        console.log("Patch 逻辑被触发, 开始处理 VNode:", n2);
+        // 处理组件vNode
         if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
             processComponent(n1, n2, container)
+        }
+        // 处理Element vNode
+        if (shapeFlag & ShapeFlags.ELEMENT) {
+            console.log("处理 Element");
         }
     }
 

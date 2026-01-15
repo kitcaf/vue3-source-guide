@@ -6,6 +6,7 @@ import { type VNode } from "./vnode"
  * 产生createApp工厂函数的工厂（高阶函数）。
  * 它的作用是接收 render 函数，然后返回真正的 createApp 函数。
  * * @param render - 由 Renderer 传入的具体渲染函数
+ * 依据是闭包进行，将createAppAPI把runtime-core中的核心render函数作为参数
  */
 export function createAppAPI(
     render: (vnode: VNode, container: Element) => void

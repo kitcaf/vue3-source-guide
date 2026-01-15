@@ -16,6 +16,7 @@
   "packageManager": "pnpm@10.25.0",
   "devDependencies": {
     "@types/node": "^25.0.2",
+    "happy-dom": "^20.3.0",
     "typescript": "^5.9.3",
     "vitepress": "^1.6.4",
     "vitest": "^4.0.15",
