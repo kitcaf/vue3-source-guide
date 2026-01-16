@@ -52,11 +52,17 @@
     - [运行时概述](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.1%20%E6%A6%82%E8%BF%B0/3.1%20%E8%BF%90%E8%A1%8C%E6%97%B6%E6%A6%82%E8%BF%B0%E3%80%90%E9%87%8D%E8%A6%81%E3%80%91.md)
   - 3.2 初始化流程
     - [runtime-core 流程概览 & `createApp` 入口](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.1%20runtime-core%20%E6%B5%81%E7%A8%8B%E6%A6%82%E8%A7%88%20&%20createApp%20%E5%85%A5%E5%8F%A3.md)
-    - [实现 `createRenderer` (渲染器工厂函数)](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.2%20%E5%AE%9E%E7%8E%B0%20createRenderer.md)
-    - [实现 h 函数 & 完善 VNode (ShapeFlags)](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.3%20%E5%AE%9E%E7%8E%B0%20h%20%E5%87%BD%E6%95%B0%20&%20%E5%AE%8C%E5%96%84%20VNode%20(ShapeFlags).md)
+    - [3.2.2 实现createVNode（很重要）](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.2%20%E5%AE%9E%E7%8E%B0%20createRenderer.md)
+    - [3.2.3 实现 `createRenderer` (渲染器工厂函数)](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.3%20%E5%AE%9E%E7%8E%B0%20createRenderer%20(%E6%B8%B2%E6%9F%93%E5%99%A8%E5%B7%A5%E5%8E%82%E5%87%BD%E6%95%B0)%20.md)
+    - [3.2.4 完善 VNode (ShapeFlags)](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.4%20%E5%AE%8C%E5%96%84%20VNode%20(ShapeFlags).md)
+    - [3.2.5 实现初始化 component 主流程](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.5%20%E5%AE%9E%E7%8E%B0%E5%88%9D%E5%A7%8B%E5%8C%96%20component%20%E4%B8%BB%E6%B5%81%E7%A8%8B.md)
+    - [3.2.6 实现初始化 element 主流程](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.6%20%E5%AE%9E%E7%8E%B0%E5%88%9D%E5%A7%8B%E5%8C%96%20element%20%E4%B8%BB%E6%B5%81%E7%A8%8B.md)
+    - [3.2.7 基础实现 runtime-dom](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.7%20%E5%9F%BA%E7%A1%80%E5%AE%9E%E7%8E%B0%20runtime-dom.md)
+    - [3.2.8 注册事件功能 (处理 @click)](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.8%20%E6%B3%A8%E5%86%8C%E4%BA%8B%E4%BB%B6%E5%8A%9F%E8%83%BD%20(%E5%A4%84%E7%90%86%20@click).md)
+    - [3.2.10 实现自定义渲染器 custom renderer](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.10%20%E5%AE%9E%E7%8E%B0%E8%87%AA%E5%AE%9A%E4%B9%89%E6%B8%B2%E6%9F%93%E5%99%A8%20custom%20renderer.md)
 - [index](docs/index.md)
 
-<!--tocEnd:offset=36-->
+<!--tocEnd:offset=42-->
 
 ## 致谢 | Acknowledgements
 
