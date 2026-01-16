@@ -1,18 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createRenderer } from "../src/renderer";
 import { h } from "../src/h";
-
-const rendererOptions = {
-    createElement(type: string) {
-        return document.createElement(type);
-    },
-    patchProp(el: HTMLElement, key: string, prevVal: any, nextVal: any) {
-        el.setAttribute(key, nextVal);
-    },
-    insert(el: HTMLElement, parent: HTMLElement) {
-        parent.append(el);
-    },
-};
+import { rendererOptions } from "../../runtime-dom/src"
 
 describe("component test", () => {
     it("should mount element with props and text children", () => {

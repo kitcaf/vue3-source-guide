@@ -8,3 +8,7 @@ export function insert(
     anchor?: any): void {
     parent.appendChild(el)
 }
+
+export function createText(text: string): Text {
+    return document.createTextNode(text);
+}

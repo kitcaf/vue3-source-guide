@@ -1,6 +1,6 @@
 import { ShapeFlags } from "@mini-vue/shared"
 import { createAppAPI } from "./apiCreateApp"
-import { type VNode } from "./vnode";
+import { Fragment, Text, type VNode } from "./vnode";
 import { ComponentInternalInstance, createComponentInstance, setupComponent } from './component';
 
 export interface RendererOptions {
@@ -15,7 +15,11 @@ export interface RendererOptions {
     /**·
      * 向父元素插入子元素方法
      */
-    insert(el: HTMLElement, parent: HTMLElement, anchor?: any): void
+    insert(el: HTMLElement | Text, parent: HTMLElement, anchor?: any): void
+    /**
+     * 创建一个文本节点
+     */
+    createText(text: string): Text
 }
 
 export function createRenderer(options: RendererOptions) {
@@ -25,7 +29,8 @@ export function createRenderer(options: RendererOptions) {
     const {
         createElement: hostCreateElement,
         patchProp: hostPatchProp,
-        insert: hostInsert
+        insert: hostInsert,
+        createText: hostCreateText,
     } = options
 
     // render: 渲染入口 调用 patch，处理挂载逻辑
@@ -40,27 +45,48 @@ export function createRenderer(options: RendererOptions) {
     // n2 新VNode（虚拟节点树）
     // contianer 容器 - 就是挂载的div
     function patch(n1: VNode | null, n2: VNode, container: HTMLElement) {
-        const { shapeFlag } = n2
-        //挂载阶段
-        if (!n1) {
-            // 处理组件vNode
-            if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-                processComponent(n1, n2, container)
-            }
-            // 处理Element vNode
-            if (shapeFlag & ShapeFlags.ELEMENT) {
-                if (!n1) mountElement(n2, container) // 挂载
-            }
+        const { type, shapeFlag } = n2
+        switch (type) {
+            case Fragment:
+                processFragment(n1, n2, container)
+                break;
+            case Text:
+                processText(n1, n2, container)
+                break
+            default:
+                // 处理组件vNode
+                if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+                    processComponent(n1, n2, container)
+                }
+                // 处理Element vNode
+                if (shapeFlag & ShapeFlags.ELEMENT) {
+                    if (!n1) mountElement(n2, container) // 挂载
+                }
+                break;
         }
     }
 
+    // 处理Fragment vNode节点（其实本质就是一个不渲染的div，包裹了组件的ui描述）
+    function processFragment(n1: VNode | null, n2: VNode, container: HTMLElement) {
+        // 那么就是说我不需要处理它本身代表的元素，直接处理它的孩子
+        mountChildren(n2.children as VNode[], container)
+    }
+
+    // 处理Text vNode节点
+    function processText(n1: VNode | null, n2: VNode, container: HTMLElement) {
+        const { children } = n2
+        const textDom = (n2.el = hostCreateText(children as string))
+        hostInsert(textDom, container)
+    }
+
+    // 挂载Element vNode节点
     function mountElement(vnode: VNode, container: HTMLElement) {
         // 创建真实DOM
         const el = hostCreateElement(vnode.type as string)
         vnode.el = el as HTMLElement
 
         const { shapeFlag, children } = vnode
-        // 处理子节点
+        // 我的子节点就只有text，没有其他
         if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
             el.textContent = children as string
         }

@@ -1,14 +1,20 @@
 import { ShapeFlags } from "@mini-vue/shared"
 import { ComponentOptions } from "./component"
 
-export type vNodeType = string | ComponentOptions
+export const Fragment = Symbol("Fragment")
+export const Text = Symbol("Text")
+
+export type vNodeType = string
+    | ComponentOptions
+    | typeof Fragment
+    | typeof Text
 
 export interface VNode {
     type: vNodeType,
     props: any, // 参数（透传）
     children: string | any[] | null,
     shapeFlag: number,
-    el: HTMLElement | null
+    el: HTMLElement | Text | null
 
 }
 
@@ -44,4 +50,9 @@ function getShapeFlag(type: any) {
     return typeof type === 'string'
         ? ShapeFlags.ELEMENT
         : ShapeFlags.STATEFUL_COMPONENT
+}
+
+// 这个只是为了方便调用（只是为了（方便编译器使用））
+export function createTextVNode(text: string) {
+    return createVNode(Text, {}, text);
 }

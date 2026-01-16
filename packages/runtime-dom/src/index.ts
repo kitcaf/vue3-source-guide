@@ -1,13 +1,14 @@
 import { ComponentOptions } from "@mini-vue/runtime-core";
 import { RendererOptions, createRenderer } from "@mini-vue/runtime-core";
-import { createElement, insert } from "./nodeOps";
+import { createElement, createText, insert } from "./nodeOps";
 import { patchProp } from "./patchProp";
 
 // --- 组装渲染器 ---
 export const rendererOptions: RendererOptions = {
     createElement,
     patchProp,
-    insert
+    insert,
+    createText
 }
 
 // 导出基于 DOM 的 createApp
