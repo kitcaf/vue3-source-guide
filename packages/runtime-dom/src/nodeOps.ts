@@ -12,3 +12,7 @@ export function insert(
 export function createText(text: string): Text {
     return document.createTextNode(text);
 }
+
+export function setElementText(el: HTMLElement, text: string) {
+    el.textContent = text
+}

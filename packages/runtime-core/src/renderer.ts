@@ -3,26 +3,50 @@ import { createAppAPI } from "./apiCreateApp"
 import { Fragment, Text, type VNode } from "./vnode";
 import { ComponentInternalInstance, createComponentInstance, setupComponent } from './component';
 
-export interface RendererOptions {
+/**
+ * 最基础的单位。它可以是元素（div），也可以是纯文本（"hello"）
+ */
+export interface RendererNode {
+    [key: string]: any
+}
+/**
+ * (元素)：是节点的一种，但它更高级。它是“容器”
+ * 从DOM世界来看，比如它有setAttribute、appendChild等方法
+ * 因为渲染不一定是渲染到DOM，别的也需要考虑，因此这里设置的比较宽泛
+ */
+export interface RendererElement extends RendererNode {
+}
+
+export interface RendererOptions<
+    HostNode = RendererNode,
+    HostElement = RendererElement
+> {
     /**
      * 创建DOM方法
      */
-    createElement(type: string): HTMLElement
+    createElement(type: string): HostElement
     /**
      * 向DOM元素中插入属性方法
      */
-    patchProp(el: HTMLElement, key: string, preValue: any, nextValue: any): void
+    patchProp(el: HostElement, key: string, preValue: any, nextValue: any): void
     /**·
      * 向父元素插入子元素方法
      */
-    insert(el: HTMLElement | Text, parent: HTMLElement, anchor?: any): void
+    insert(el: HostNode, parent: HostElement, anchor?: any): void
     /**
      * 创建一个文本节点
      */
-    createText(text: string): Text
+    createText(text: string): HostNode
+    /**
+     * 对元素设置文本
+     */
+    setElementText(node: HostElement, text: string): void
 }
 
-export function createRenderer(options: RendererOptions) {
+export function createRenderer<
+    HostNode extends RendererNode,
+    HostElement extends HostNode
+>(options: RendererOptions<HostNode, HostElement>) {
     // 此时闭包的好处体现出来了
     // createRenderer被调用一次，在整个生命周期构建了一个独立的作用域
     // 里面的函数可以调用统一的一个options方法
@@ -31,10 +55,11 @@ export function createRenderer(options: RendererOptions) {
         patchProp: hostPatchProp,
         insert: hostInsert,
         createText: hostCreateText,
+        setElementText: hostSetElementText
     } = options
 
     // render: 渲染入口 调用 patch，处理挂载逻辑
-    function render(vnode: VNode, container: HTMLElement) {
+    function render(vnode: VNode, container: HostElement) {
         patch(null, vnode, container)
     }
 
@@ -44,7 +69,7 @@ export function createRenderer(options: RendererOptions) {
     // 表现形式上是节点但有children变量本质就是VNode树
     // n2 新VNode（虚拟节点树）
     // contianer 容器 - 就是挂载的div
-    function patch(n1: VNode | null, n2: VNode, container: HTMLElement) {
+    function patch(n1: VNode | null, n2: VNode, container: HostElement) {
         const { type, shapeFlag } = n2
         switch (type) {
             case Fragment:
@@ -67,28 +92,28 @@ export function createRenderer(options: RendererOptions) {
     }
 
     // 处理Fragment vNode节点（其实本质就是一个不渲染的div，包裹了组件的ui描述）
-    function processFragment(n1: VNode | null, n2: VNode, container: HTMLElement) {
+    function processFragment(n1: VNode | null, n2: VNode, container: HostElement) {
         // 那么就是说我不需要处理它本身代表的元素，直接处理它的孩子
         mountChildren(n2.children as VNode[], container)
     }
 
     // 处理Text vNode节点
-    function processText(n1: VNode | null, n2: VNode, container: HTMLElement) {
+    function processText(n1: VNode | null, n2: VNode, container: HostElement) {
         const { children } = n2
-        const textDom = (n2.el = hostCreateText(children as string))
+        const textDom = (n2.el = hostCreateText(children as string)!)
         hostInsert(textDom, container)
     }
 
     // 挂载Element vNode节点
-    function mountElement(vnode: VNode, container: HTMLElement) {
+    function mountElement(vnode: VNode, container: HostElement) {
         // 创建真实DOM
         const el = hostCreateElement(vnode.type as string)
-        vnode.el = el as HTMLElement
+        vnode.el = el
 
         const { shapeFlag, children } = vnode
         // 我的子节点就只有text，没有其他
         if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-            el.textContent = children as string
+            hostSetElementText(el, children as string)
         }
         else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
             mountChildren(children as VNode[], el)
@@ -104,19 +129,19 @@ export function createRenderer(options: RendererOptions) {
         hostInsert(el, container)
     }
 
-    function mountChildren(children: VNode[], container: HTMLElement) {
+    function mountChildren(children: VNode[], container: HostElement) {
         children.forEach(vnode => {
             patch(null, vnode, container)
         })
     }
 
     //  --- 组件处理流程 ---
-    function processComponent(n1: VNode | null, n2: VNode, container: HTMLElement) {
+    function processComponent(n1: VNode | null, n2: VNode, container: HostElement) {
         // 表示挂载
         if (!n1) mountComponent(n2, container)
     }
 
-    function mountComponent(initialVNode: VNode, container: HTMLElement) {
+    function mountComponent(initialVNode: VNode, container: HostElement) {
         const instance = createComponentInstance(initialVNode)
 
         // 执行setup,此时instance.render已经被成功赋值了
@@ -129,7 +154,7 @@ export function createRenderer(options: RendererOptions) {
     function setupRenderEffect(
         instance: ComponentInternalInstance,
         initialVNode: VNode,
-        container: HTMLElement) {
+        container: HostElement) {
         // 返回改组件的描述ui Vnode, 它本质也是vNode继续递归
         const subTreeVNode = instance.render!()
 
@@ -144,6 +169,6 @@ export function createRenderer(options: RendererOptions) {
     }
 
     return {
-        createApp: createAppAPI(render)
+        createApp: createAppAPI<HostElement>(render)
     }
 }

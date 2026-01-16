@@ -1,14 +1,16 @@
 import { ComponentOptions } from "@mini-vue/runtime-core";
 import { RendererOptions, createRenderer } from "@mini-vue/runtime-core";
-import { createElement, createText, insert } from "./nodeOps";
+import { createElement, createText, insert, setElementText } from "./nodeOps";
 import { patchProp } from "./patchProp";
 
 // --- 组装渲染器 ---
-export const rendererOptions: RendererOptions = {
+// 此时传入的两个类型就是DOM世界的类型
+export const rendererOptions: RendererOptions<Node, Element> = {
     createElement,
     patchProp,
     insert,
-    createText
+    createText,
+    setElementText
 }
 
 // 导出基于 DOM 的 createApp

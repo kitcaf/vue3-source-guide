@@ -1,5 +1,6 @@
 import { ShapeFlags } from "@mini-vue/shared"
 import { ComponentOptions } from "./component"
+import { RendererElement, RendererNode } from "./renderer"
 
 export const Fragment = Symbol("Fragment")
 export const Text = Symbol("Text")
@@ -14,8 +15,7 @@ export interface VNode {
     props: any, // 参数（透传）
     children: string | any[] | null,
     shapeFlag: number,
-    el: HTMLElement | Text | null
-
+    el: RendererNode | null
 }
 
 /**
@@ -34,7 +34,7 @@ export function createVNode(
         props,
         children: children ?? null,
         shapeFlag: getShapeFlag(type),
-        el: null //
+        el: null
     }
 
     // 叠加状态
