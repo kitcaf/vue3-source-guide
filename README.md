@@ -60,9 +60,11 @@
     - [3.2.7 基础实现 runtime-dom](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.7%20%E5%9F%BA%E7%A1%80%E5%AE%9E%E7%8E%B0%20runtime-dom.md)
     - [3.2.8 注册事件功能 (处理 @click)](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.8%20%E6%B3%A8%E5%86%8C%E4%BA%8B%E4%BB%B6%E5%8A%9F%E8%83%BD%20(%E5%A4%84%E7%90%86%20@click).md)
     - [3.2.10 实现自定义渲染器 custom renderer](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.9%20%E5%AE%9E%E7%8E%B0%E8%87%AA%E5%AE%9A%E4%B9%89%E6%B8%B2%E6%9F%93%E5%99%A8%20custom%20renderer.md)
+  - 3.3 组件实例与功能
+    - [3.3.1 实现组件代理](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.1%20%E5%AE%9E%E7%8E%B0%E7%BB%84%E4%BB%B6%E4%BB%A3%E7%90%86.md)
 - [index](docs/index.md)
 
-<!--tocEnd:offset=42-->
+<!--tocEnd:offset=44-->
 
 
 ## 致谢 | Acknowledgements

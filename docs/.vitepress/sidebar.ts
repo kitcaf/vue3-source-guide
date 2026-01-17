@@ -180,6 +180,16 @@ export const sidebar: DefaultTheme.SidebarItem[] = [
           }
         ],
         "collapsed": false
+      },
+      {
+        "text": "3.3 组件实例与功能",
+        "items": [
+          {
+            "text": "3.3.1 实现组件代理",
+            "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.1 实现组件代理"
+          }
+        ],
+        "collapsed": false
       }
     ],
     "collapsed": false
