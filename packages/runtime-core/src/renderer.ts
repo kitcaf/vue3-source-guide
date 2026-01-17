@@ -155,8 +155,10 @@ export function createRenderer<
         instance: ComponentInternalInstance,
         initialVNode: VNode,
         container: HostElement) {
+        const { proxy } = instance
         // 返回改组件的描述ui Vnode, 它本质也是vNode继续递归
-        const subTreeVNode = instance.render!()
+        // 新增，既保证this是代理，同时也给render函数传入第一个实际参（保证也是代理）
+        const subTreeVNode = instance.render!.call(proxy, proxy)
 
         // 继续递归
         patch(null, subTreeVNode, container)

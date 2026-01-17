@@ -1,3 +1,4 @@
+import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 import { type VNode } from "./vnode";
 
 //render的类型，InternalRenderFunction = () => VNode;也可以
@@ -24,7 +25,8 @@ export interface ComponentInternalInstance {
     vnode: VNode; // 当前组件的 vnode
     type: ComponentOptions; // 组件配置对象
     // --- 状态相关 ---
-    setupState: any;        // setup 的返回值
+    setupState: any;        // setup 的返回值-一般是一个对象
+    proxy: any, // 代理对象
     // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
     render: InternalRenderFunction | null;
 }
@@ -34,8 +36,10 @@ export function createComponentInstance(vnode: VNode): ComponentInternalInstance
         vnode,
         type: vnode.type as ComponentOptions,
         setupState: {},
+        proxy: {},
         render: null
     }
+    instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers)
     return instance
 }
 
