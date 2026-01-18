@@ -1,3 +1,4 @@
+import { hasOwn } from "@mini-vue/shared";
 import { ComponentInternalInstance } from "./component"
 
 /**
@@ -17,11 +18,15 @@ const publicPropertiesMap: Record<string, (i: ComponentInternalInstance) => any>
 export const PublicInstanceProxyHandlers = {
     // 解构动作：取出 target._ 赋值给 instance 变量（ES6解构+重命名）
     get({ _: instance }: { _: ComponentInternalInstance }, key: string) {
-        const { setupState } = instance;
+        const { setupState, props } = instance;
 
         // 检测setupState
-        if (key in setupState) {
+        if (hasOwn(setupState, key)) {
             return setupState[key]
+        }
+        // 查props，虽然也可以直接if, 但是还是表达互斥关系好一点
+        else if (hasOwn(props, key)) {
+            return props[key]
         }
 
         // $ 开头的公共属性
@@ -29,7 +34,5 @@ export const PublicInstanceProxyHandlers = {
         if (publicProperty) {
             return publicProperty(instance)
         }
-
-        //后续实现检测props
     }
 }

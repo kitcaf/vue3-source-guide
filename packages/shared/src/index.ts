@@ -15,7 +15,8 @@ export function hasChanged(value: any, oldValue: any) {
 // 判断是否以 on 开头，且第三个字符是大写
 export const inOn = (key: string) => /^on[A-Z]/.test(key);
 
-//判断对象本身是否有该属性 (不查找原型链)
+//判断对象本身是否有该属性 (不查找原型链-很重要啊-在某先判断中如果使用in会导致误判)
+// 核对；属性是不是显式定义在这个对象里的
 export const hasOwn = (object: object, key: string | symbol) => Object.prototype.hasOwnProperty.call(object, key)
 
 export const isArray = Array.isArray;

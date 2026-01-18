@@ -1,3 +1,4 @@
+import { initProps } from "./componentProps";
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 import { type VNode } from "./vnode";
 
@@ -23,10 +24,11 @@ export interface ComponentOptions {
 export interface ComponentInternalInstance {
     // --- 核心属性 ---
     vnode: VNode; // 当前组件的 vnode
-    type: ComponentOptions; // 组件配置对象
+    type: ComponentOptions; // 组件实例对象
     // --- 状态相关 ---
     setupState: any;        // setup 的返回值-一般是一个对象
     proxy: any, // 代理对象
+    props: any,
     // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
     render: InternalRenderFunction | null;
 }
@@ -37,6 +39,7 @@ export function createComponentInstance(vnode: VNode): ComponentInternalInstance
         type: vnode.type as ComponentOptions,
         setupState: {},
         proxy: {},
+        props: null,
         render: null
     }
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers)
@@ -44,8 +47,9 @@ export function createComponentInstance(vnode: VNode): ComponentInternalInstance
 }
 
 export function setupComponent(instance: ComponentInternalInstance) {
-    // TODO: initProps, initSlots (后续章节实现)
-    // 暂且只处理状态组件
+    //处理props
+    initProps(instance, instance.vnode.props)
+    // 执行setup - 记得传入props参数
     setupStatefulComponent(instance)
 }
 
@@ -54,7 +58,7 @@ export function setupStatefulComponent(instance: ComponentInternalInstance) {
     const { setup } = Component
 
     if (setup) {
-        const setupResult = setup()
+        const setupResult = setup(instance.props)
         handleSetupResult(instance, setupResult)
     } else {
         finishComponentSetup(instance)
