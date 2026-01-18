@@ -20,3 +20,21 @@ export const inOn = (key: string) => /^on[A-Z]/.test(key);
 export const hasOwn = (object: object, key: string | symbol) => Object.prototype.hasOwnProperty.call(object, key)
 
 export const isArray = Array.isArray;
+
+// foo-bar -> fooBar
+export const camelize = (str: string) => {
+    return str.replace(/-(\w)/g, (_, c: string) => {
+        return c ? c.toUpperCase() : "";
+    });
+};
+
+// foo -> Foo
+export const capitalize = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+// foo -> onFoo
+export const toHandlerKey = (str: string) => {
+    return str ? "on" + capitalize(str) : "";
+};
+

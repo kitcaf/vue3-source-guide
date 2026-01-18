@@ -1,3 +1,4 @@
+import { emit } from "./componentEmit";
 import { initProps } from "./componentProps";
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 import { type VNode } from "./vnode";
@@ -31,6 +32,7 @@ export interface ComponentInternalInstance {
     props: any,
     // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
     render: InternalRenderFunction | null;
+    emit: (...args: any) => void
 }
 
 export function createComponentInstance(vnode: VNode): ComponentInternalInstance {
@@ -40,9 +42,15 @@ export function createComponentInstance(vnode: VNode): ComponentInternalInstance
         setupState: {},
         proxy: {},
         props: null,
-        render: null
+        render: null,
+        emit: () => { }, // 先占位
     }
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers)
+    //将 emit 函数绑定到当前 instance 上, 只要调用instance.emit()
+    // 通过bind此时它的第一个参数默认就是instance
+    // 不需要自己处理emit(instance, event, ...) 这样调用
+    // 直接就是emit(event)调用
+    instance.emit = emit.bind(null, instance)
     return instance
 }
 
@@ -58,7 +66,9 @@ export function setupStatefulComponent(instance: ComponentInternalInstance) {
     const { setup } = Component
 
     if (setup) {
-        const setupResult = setup(instance.props)
+        const setupResult = setup(instance.props, {
+            emit: instance.emit
+        })
         handleSetupResult(instance, setupResult)
     } else {
         finishComponentSetup(instance)

@@ -7,12 +7,13 @@ import { ComponentInternalInstance } from "./component"
  * value: 函数，接收 instance，返回具体的值
  */
 const publicPropertiesMap: Record<string, (i: ComponentInternalInstance) => any> = {
-    // （$el一般是在生命中期中访问（this.$el），template不会使用）
+    // （$el一般是在生命中期中访问（_ctx/this.$el），template不会使用）
     // 当用户访问 this.$el 时，返回 instance.vnode.el
-    $el: (i) => i.vnode.el,
+    $el: (i: ComponentInternalInstance) => i.vnode.el,
+    // @emit 当用户访问 _ctx/this.$emit 时, 返回另一个函数
+    $emit: (i: ComponentInternalInstance) => i.emit
     // $slots 后面会实现
     // $slots: (i) => i.slots
-    // $emit等等
 }
 
 export const PublicInstanceProxyHandlers = {
