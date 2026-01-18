@@ -1,6 +1,7 @@
 import { emit } from "./componentEmit";
 import { initProps } from "./componentProps";
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
+import { initSlots } from "./componentSlots";
 import { type VNode } from "./vnode";
 
 //render的类型，InternalRenderFunction = () => VNode;也可以
@@ -21,6 +22,8 @@ export interface ComponentOptions {
     [key: string]: any,
 }
 
+export type Slot = (props: any) => VNode[] | VNode;
+
 // 组件实例 (内部使用的组件对象)
 export interface ComponentInternalInstance {
     // --- 核心属性 ---
@@ -30,6 +33,7 @@ export interface ComponentInternalInstance {
     setupState: any;        // setup 的返回值-一般是一个对象
     proxy: any, // 代理对象
     props: any,
+    slots: Record<string, Slot>
     // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
     render: InternalRenderFunction | null;
     emit: (...args: any) => void
@@ -42,6 +46,7 @@ export function createComponentInstance(vnode: VNode): ComponentInternalInstance
         setupState: {},
         proxy: {},
         props: null,
+        slots: {},
         render: null,
         emit: () => { }, // 先占位
     }
@@ -57,6 +62,8 @@ export function createComponentInstance(vnode: VNode): ComponentInternalInstance
 export function setupComponent(instance: ComponentInternalInstance) {
     //处理props
     initProps(instance, instance.vnode.props)
+    //处理slots
+    initSlots(instance, instance.vnode.children as Record<string, Slot>)
     // 执行setup - 记得传入props参数
     setupStatefulComponent(instance)
 }

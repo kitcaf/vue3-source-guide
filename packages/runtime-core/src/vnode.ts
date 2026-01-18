@@ -1,5 +1,5 @@
 import { ShapeFlags } from "@mini-vue/shared"
-import { ComponentOptions } from "./component"
+import { ComponentOptions, Slot } from "./component"
 import { RendererElement, RendererNode } from "./renderer"
 
 export const Fragment = Symbol("Fragment")
@@ -10,10 +10,18 @@ export type vNodeType = string
     | typeof Fragment
     | typeof Text
 
+export type VNodeChildren =
+    | string
+    | any[]
+    | VNode
+    | VNode[]
+    | Record<string, Slot> // ✨ 必须加这一行
+    | null;
+
 export interface VNode {
     type: vNodeType,
     props: any, // 参数（透传）
-    children: string | any[] | null,
+    children: VNodeChildren,
     shapeFlag: number,
     el: RendererNode | null
 }
@@ -27,7 +35,7 @@ export interface VNode {
 export function createVNode(
     type: vNodeType,
     props?: any,
-    children?: string | any[] | null
+    children?: VNodeChildren
 ): VNode {
     const vnode: VNode = {
         type,
@@ -43,6 +51,15 @@ export function createVNode(
     } else if (Array.isArray(children)) {
         vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN
     }
+
+    // 判断slots，是组件然后它的children是对象
+    if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+        if (typeof vnode.children === 'object') {
+            vnode.shapeFlag |= ShapeFlags.SLOTS_CHILDREN
+        }
+    }
+
+    // 判断子节点是否是插槽
     return vnode
 }
 

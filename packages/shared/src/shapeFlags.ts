@@ -6,5 +6,7 @@ export const enum ShapeFlags {
     //0100 子节点是纯文本（vnode.children）- 递归树等的判断
     TEXT_CHILDREN = 1 << 2,
     //01000 子节点是数组
-    ARRAY_CHILDREN = 1 << 3
+    ARRAY_CHILDREN = 1 << 3,
+    // 插槽子节点标志
+    SLOTS_CHILDREN = 1 << 4
 }

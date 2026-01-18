@@ -11,9 +11,9 @@ const publicPropertiesMap: Record<string, (i: ComponentInternalInstance) => any>
     // 当用户访问 this.$el 时，返回 instance.vnode.el
     $el: (i: ComponentInternalInstance) => i.vnode.el,
     // @emit 当用户访问 _ctx/this.$emit 时, 返回另一个函数
-    $emit: (i: ComponentInternalInstance) => i.emit
-    // $slots 后面会实现
-    // $slots: (i) => i.slots
+    $emit: (i: ComponentInternalInstance) => i.emit,
+    // $slots 
+    $slots: (i: ComponentInternalInstance) => i.slots
 }
 
 export const PublicInstanceProxyHandlers = {

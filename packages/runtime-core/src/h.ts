@@ -1,9 +1,9 @@
-import { createVNode, vNodeType } from "./vnode";
+import { createVNode, VNodeChildren, vNodeType } from "./vnode";
 
 
 export function h(
     type: vNodeType,
     props?: any,
-    children?: string | any[] | null) {
+    children?: VNodeChildren) {
     return createVNode(type, props, children)
 }
