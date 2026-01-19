@@ -168,7 +168,12 @@ export function createRenderer<
         instance: ComponentInternalInstance,
         initialVNode: VNode,
         container: HostElement) {
-        const { proxy } = instance
+        const { proxy, bm, m } = instance
+
+        // 此时 render 还没执行，DOM 也没生成
+        if (bm) {
+            invokeArrayFns(bm)
+        }
         // 返回改组件的描述ui Vnode, 它本质也是vNode继续递归
         // 新增，既保证this是代理，同时也给render函数传入第一个实际参（保证也是代理）
         const subTreeVNode = instance.render!.call(proxy, proxy)
@@ -181,9 +186,21 @@ export function createRenderer<
         // 也就是说上层递归会进入到element的判断, 然后初始化el = div真实DOM
         // vnode的el当然是应该subTreeVNode.el=<div></div>
         initialVNode.el = subTreeVNode.el
+
+        // 挂载结束
+        if (m) {
+            invokeArrayFns(m)
+        }
     }
 
     return {
         createApp: createAppAPI<HostElement>(render)
+    }
+}
+
+// 辅助函数：遍历执行数组中的函数
+function invokeArrayFns(fns: Function[]) {
+    for (const fn of fns) {
+        fn()
     }
 }

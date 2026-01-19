@@ -38,7 +38,10 @@ export interface ComponentInternalInstance {
     provides: Record<string, object>,
     // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
     render: InternalRenderFunction | null;
-    emit: (...args: any) => void
+    emit: (...args: any) => void,
+    // --- 生命周期相关 ---
+    bm: Function[] | null, // onBeforeMounted
+    m: Function[] | null, // onMounted
 }
 
 let currentInstance: ComponentInternalInstance | null = null
@@ -67,6 +70,8 @@ export function createComponentInstance(
         provides: parent ? parent.provides : Object.create(null),
         render: null,
         emit: () => { },
+        bm: null,
+        m: null
     }
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers)
     //将 emit 函数绑定到当前 instance 上, 只要调用instance.emit()
