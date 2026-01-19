@@ -207,6 +207,10 @@ export const sidebar: DefaultTheme.SidebarItem[] = [
           {
             "text": "3.3.6 实现依赖注入功能 provide/inject",
             "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.6 实现依赖注入功能inject & provide"
+          },
+          {
+            "text": "**3.3.7 实现 Lifecycle Hooks**",
+            "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.7 实现 Lifecycle Hooks"
           }
         ],
         "collapsed": false
