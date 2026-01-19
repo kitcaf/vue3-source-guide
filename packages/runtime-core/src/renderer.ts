@@ -69,7 +69,11 @@ export function createRenderer<
     // 表现形式上是节点但有children变量本质就是VNode树
     // n2 新VNode（虚拟节点树）
     // contianer 容器 - 就是挂载的div
-    function patch(n1: VNode | null, n2: VNode, container: HostElement) {
+    function patch(
+        n1: VNode | null,
+        n2: VNode,
+        container: HostElement,
+        parent: ComponentInternalInstance | null = null) {
         const { type, shapeFlag } = n2
         switch (type) {
             case Fragment:
@@ -81,7 +85,7 @@ export function createRenderer<
             default:
                 // 处理组件vNode
                 if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-                    processComponent(n1, n2, container)
+                    processComponent(n1, n2, container, parent)
                 }
                 // 处理Element vNode
                 if (shapeFlag & ShapeFlags.ELEMENT) {
@@ -136,13 +140,22 @@ export function createRenderer<
     }
 
     //  --- 组件处理流程 ---
-    function processComponent(n1: VNode | null, n2: VNode, container: HostElement) {
+    function processComponent(
+        n1: VNode | null,
+        n2: VNode,
+        container: HostElement,
+        parent: ComponentInternalInstance | null
+    ) {
         // 表示挂载
-        if (!n1) mountComponent(n2, container)
+        if (!n1) mountComponent(n2, container, parent)
     }
 
-    function mountComponent(initialVNode: VNode, container: HostElement) {
-        const instance = createComponentInstance(initialVNode)
+    function mountComponent(
+        initialVNode: VNode,
+        container: HostElement,
+        parent: ComponentInternalInstance | null
+    ) {
+        const instance = createComponentInstance(initialVNode, parent)
 
         // 执行setup,此时instance.render已经被成功赋值了
         setupComponent(instance)
@@ -161,7 +174,7 @@ export function createRenderer<
         const subTreeVNode = instance.render!.call(proxy, proxy)
 
         // 继续递归
-        patch(null, subTreeVNode, container)
+        patch(null, subTreeVNode, container, instance)
 
         //当 vnode 是组件 (Component) 时， 指向该组件渲染出的子树根节点的el
         // 比如假设vnode.render(), 执行的是h('div', null, h(Bar-组件))

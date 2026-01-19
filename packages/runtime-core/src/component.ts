@@ -34,12 +34,26 @@ export interface ComponentInternalInstance {
     proxy: any, // 代理对象
     props: any,
     slots: Record<string, Slot>
+    parent: ComponentInternalInstance | null, // 只指向父组件实例
+    provides: Record<string, object>,
     // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
     render: InternalRenderFunction | null;
     emit: (...args: any) => void
 }
 
-export function createComponentInstance(vnode: VNode): ComponentInternalInstance {
+let currentInstance: ComponentInternalInstance | null = null
+
+export function getCurrentInstance() {
+    return currentInstance!;
+}
+
+export function setCurrentInstance(instance: ComponentInternalInstance | null) {
+    currentInstance = instance;
+}
+
+export function createComponentInstance(
+    vnode: VNode,
+    parent: ComponentInternalInstance | null): ComponentInternalInstance {
     const instance: ComponentInternalInstance = {
         vnode,
         type: vnode.type as ComponentOptions,
@@ -47,8 +61,12 @@ export function createComponentInstance(vnode: VNode): ComponentInternalInstance
         proxy: {},
         props: null,
         slots: {},
+        parent: parent,
+        // 初始化App.vue的parent一定是null, 需要初始化为{} (Object.create(null))
+        // 其他组件都是parent.privides
+        provides: parent ? parent.provides : Object.create(null),
         render: null,
-        emit: () => { }, // 先占位
+        emit: () => { },
     }
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers)
     //将 emit 函数绑定到当前 instance 上, 只要调用instance.emit()
@@ -73,9 +91,13 @@ export function setupStatefulComponent(instance: ComponentInternalInstance) {
     const { setup } = Component
 
     if (setup) {
+        // 在调用 setup 之前，设置全局变量
+        setCurrentInstance(instance)
         const setupResult = setup(instance.props, {
             emit: instance.emit
         })
+        // 执行完毕后，重置全局变量
+        setCurrentInstance(null)
         handleSetupResult(instance, setupResult)
     } else {
         finishComponentSetup(instance)
