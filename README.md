@@ -62,9 +62,14 @@
     - [3.2.10 实现自定义渲染器 custom renderer](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.2%20%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/3.2.9%20%E5%AE%9E%E7%8E%B0%E8%87%AA%E5%AE%9A%E4%B9%89%E6%B8%B2%E6%9F%93%E5%99%A8%20custom%20renderer.md)
   - 3.3 组件实例与功能
     - [3.3.1 实现组件代理](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.1%20%E5%AE%9E%E7%8E%B0%E7%BB%84%E4%BB%B6%E4%BB%A3%E7%90%86.md)
+    - [3.3.2 实现组件 props 功能](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.2%20%E5%AE%9E%E7%8E%B0%E7%BB%84%E4%BB%B6%20props%20%E5%8A%9F%E8%83%BD.md)
+    - [3.3.3 实现组件 emit 功能](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.3%20%E5%AE%9E%E7%8E%B0%E7%BB%84%E4%BB%B6%20emit%20%E5%8A%9F%E8%83%BD.md)
+    - [3.3.4 实现组件 slots 功能](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.4%20%E5%AE%9E%E7%8E%B0%E7%BB%84%E4%BB%B6%20slots%20%E5%8A%9F%E8%83%BD.md)
+    - [3.3.5 实现 getCurrentInstance](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.5%20%E5%AE%9E%E7%8E%B0%20getCurrentInstance.md)
+    - [3.3.6 实现依赖注入功能 provide/inject](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.6%20%E5%AE%9E%E7%8E%B0%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E5%8A%9F%E8%83%BDinject%20&%20provide.md)
 - [index](docs/index.md)
 
-<!--tocEnd:offset=44-->
+<!--tocEnd:offset=49-->
 
 
 ## 致谢 | Acknowledgements

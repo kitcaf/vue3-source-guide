@@ -187,6 +187,26 @@ export const sidebar: DefaultTheme.SidebarItem[] = [
           {
             "text": "3.3.1 实现组件代理",
             "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.1 实现组件代理"
+          },
+          {
+            "text": "3.3.2 实现组件 props 功能",
+            "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.2 实现组件 props 功能"
+          },
+          {
+            "text": "3.3.3 实现组件 emit 功能",
+            "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.3 实现组件 emit 功能"
+          },
+          {
+            "text": "3.3.4 实现组件 slots 功能",
+            "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.4 实现组件 slots 功能"
+          },
+          {
+            "text": "3.3.5 实现 getCurrentInstance",
+            "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.5 实现 getCurrentInstance"
+          },
+          {
+            "text": "3.3.6 实现依赖注入功能 provide/inject",
+            "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.6 实现依赖注入功能inject & provide"
           }
         ],
         "collapsed": false
