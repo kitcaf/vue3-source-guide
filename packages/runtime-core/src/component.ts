@@ -1,3 +1,4 @@
+import { proxyRefs } from "@mini-vue/reactivity";
 import { emit } from "./componentEmit";
 import { initProps } from "./componentProps";
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
@@ -36,6 +37,8 @@ export interface ComponentInternalInstance {
     slots: Record<string, Slot>
     parent: ComponentInternalInstance | null, // 只指向父组件实例
     provides: Record<string, object>,
+    isMounted: Boolean, // 组件是否挂载
+    subTree: VNode | null,
     // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
     render: InternalRenderFunction | null;
     emit: (...args: any) => void,
@@ -65,6 +68,8 @@ export function createComponentInstance(
         props: null,
         slots: {},
         parent: parent,
+        isMounted: false,
+        subTree: null,
         // 初始化App.vue的parent一定是null, 需要初始化为{} (Object.create(null))
         // 其他组件都是parent.privides
         provides: parent ? parent.provides : Object.create(null),
@@ -117,7 +122,7 @@ export function setupStatefulComponent(instance: ComponentInternalInstance) {
 export function handleSetupResult(instance: ComponentInternalInstance, setupResult: any) {
     // setup 可能返回对象 (State) 
     if (typeof setupResult === 'object') {
-        instance.setupState = setupResult
+        instance.setupState = proxyRefs(setupResult)
     }
     // 第二类组件render函数
     else if (typeof setupResult === 'function') {

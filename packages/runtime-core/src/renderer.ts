@@ -2,6 +2,7 @@ import { ShapeFlags } from "@mini-vue/shared"
 import { createAppAPI } from "./apiCreateApp"
 import { Fragment, Text, type VNode } from "./vnode";
 import { ComponentInternalInstance, createComponentInstance, setupComponent } from './component';
+import { effect } from "@mini-vue/reactivity";
 
 /**
  * 最基础的单位。它可以是元素（div），也可以是纯文本（"hello"）
@@ -148,6 +149,9 @@ export function createRenderer<
     ) {
         // 表示挂载
         if (!n1) mountComponent(n2, container, parent)
+        else {
+            // 
+        }
     }
 
     function mountComponent(
@@ -168,29 +172,31 @@ export function createRenderer<
         instance: ComponentInternalInstance,
         initialVNode: VNode,
         container: HostElement) {
-        const { proxy, bm, m } = instance
 
-        // 此时 render 还没执行，DOM 也没生成
-        if (bm) {
-            invokeArrayFns(bm)
-        }
-        // 返回改组件的描述ui Vnode, 它本质也是vNode继续递归
-        // 新增，既保证this是代理，同时也给render函数传入第一个实际参（保证也是代理）
-        const subTreeVNode = instance.render!.call(proxy, proxy)
+        effect(() => {
+            if (!instance.isMounted) { // 挂载
+                const { proxy, bm, m } = instance
+                if (bm) {
+                    invokeArrayFns(bm)
+                }
+                // 记得对instance.subTree赋值
+                const subTreeVNode = (instance.subTree = instance.render!.call(proxy, proxy))
 
-        // 继续递归
-        patch(null, subTreeVNode, container, instance)
+                patch(null, subTreeVNode, container, instance)
 
-        //当 vnode 是组件 (Component) 时， 指向该组件渲染出的子树根节点的el
-        // 比如假设vnode.render(), 执行的是h('div', null, h(Bar-组件))
-        // 也就是说上层递归会进入到element的判断, 然后初始化el = div真实DOM
-        // vnode的el当然是应该subTreeVNode.el=<div></div>
-        initialVNode.el = subTreeVNode.el
+                initialVNode.el = subTreeVNode.el
+                if (m) {
+                    invokeArrayFns(m)
+                }
+            } else { // 更新
+                const { proxy } = instance
+                const oldSubTreeNode = instance.subTree
+                // 重新执行组件render
+                const newSubTreeVNode = (instance.subTree = instance.render!.call(proxy, proxy))
+                patch(oldSubTreeNode, newSubTreeVNode, container, instance)
 
-        // 挂载结束
-        if (m) {
-            invokeArrayFns(m)
-        }
+            }
+        })
     }
 
     return {
