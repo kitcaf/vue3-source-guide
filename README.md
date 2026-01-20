@@ -67,10 +67,13 @@
     - [3.3.4 实现组件 slots 功能](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.4%20%E5%AE%9E%E7%8E%B0%E7%BB%84%E4%BB%B6%20slots%20%E5%8A%9F%E8%83%BD.md)
     - [3.3.5 实现 getCurrentInstance](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.5%20%E5%AE%9E%E7%8E%B0%20getCurrentInstance.md)
     - [3.3.6 实现依赖注入功能 provide/inject](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.6%20%E5%AE%9E%E7%8E%B0%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E5%8A%9F%E8%83%BDinject%20&%20provide.md)
-    - [**3.3.7 实现 Lifecycle Hooks**](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.7%20%E5%AE%9E%E7%8E%B0%20Lifecycle%20Hooks.md)
+    - [3.3.7 实现 Lifecycle Hooks](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.7%20%E5%AE%9E%E7%8E%B0%20Lifecycle%20Hooks.md)
+  - 3.4 更新流程
+    - [3.4.1 runtime-core 更新的核心流程](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B/3.4.1%20runtime-core%20%E6%9B%B4%E6%96%B0%E7%9A%84%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B.md)
+    - [3.4.2 重构setupRenderEffect](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B/3.4.2%20%E9%87%8D%E6%9E%84setupRenderEffect.md)
 - [index](docs/index.md)
 
-<!--tocEnd:offset=50-->
+<!--tocEnd:offset=53-->
 
 
 ## 致谢 | Acknowledgements

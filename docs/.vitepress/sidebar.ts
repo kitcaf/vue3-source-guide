@@ -209,8 +209,22 @@ export const sidebar: DefaultTheme.SidebarItem[] = [
             "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.6 实现依赖注入功能inject & provide"
           },
           {
-            "text": "**3.3.7 实现 Lifecycle Hooks**",
+            "text": "3.3.7 实现 Lifecycle Hooks",
             "link": "/docs/三、运行时/3.3 组件实例与功能/3.3.7 实现 Lifecycle Hooks"
+          }
+        ],
+        "collapsed": false
+      },
+      {
+        "text": "3.4 更新流程",
+        "items": [
+          {
+            "text": "3.4.1 runtime-core 更新的核心流程",
+            "link": "/docs/三、运行时/3.4 更新流程/3.4.1 runtime-core 更新的核心流程"
+          },
+          {
+            "text": "3.4.2 重构setupRenderEffect",
+            "link": "/docs/三、运行时/3.4 更新流程/3.4.2 重构setupRenderEffect"
           }
         ],
         "collapsed": false
