@@ -138,12 +138,38 @@ export function createRenderer<
     ) {
         // 将旧节点的真实 DOM 赋值给新节点
         const el = (n2.el = n1.el)
-        const oldProps = n1.props || EMPTY_OBJ
-        const newProps = n2.props || EMPTY_OBJ
-
-        // 更新 Children （下一节）
+        const oldProps = n1.props || EMPTY_OBJ // 保证非空
+        const newProps = n2.props || EMPTY_OBJ // 保存非空
 
         // 更新 Props （下一节）
+        patchProps(el as HostElement, oldProps, newProps)
+
+        // 更新 Children （下一节）
+    }
+
+    function patchProps(el: HostElement, oldProps: any, newProps: any) {
+        if (oldProps != newProps) {
+            //循环newProps 对象 【判断新增/修改】
+            for (const key in newProps) {
+                const prevProp = oldProps[key]
+                const nextProp = newProps[key]
+
+                if (prevProp != nextProp) {
+                    // 在3.2.8节已经实现了对应的DOM方法
+                    hostPatchProp(el, key, prevProp, nextProp)
+                }
+            }
+
+            //循环oldProps
+            if (oldProps != EMPTY_OBJ) {
+                for (const key in oldProps) {
+                    if (!(key in newProps)) { // key都不存在newProps，说明是删除
+                        hostPatchProp(el, key, null, null); //删除属性语法
+                    }
+                }
+            }
+
+        }
     }
 
     // 挂载Element vNode节点

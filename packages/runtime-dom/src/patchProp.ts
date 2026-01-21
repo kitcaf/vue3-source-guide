@@ -58,9 +58,9 @@ export function patchProp(
         }
     }
     else {
-        if (nextVal == null) {
+        if (nextVal == null) {  //【删除属性】
             el.removeAttribute(key);
-        } else {
+        } else { //【新增/更新属性】
             // 设置新属性
             el.setAttribute(key, nextVal);
         }
