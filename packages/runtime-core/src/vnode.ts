@@ -15,7 +15,7 @@ export type VNodeChildren =
     | any[]
     | VNode
     | VNode[]
-    | Record<string, Slot> // ✨ 必须加这一行
+    | Record<string, Slot> // 必须加这一行
     | null;
 
 export interface VNode {

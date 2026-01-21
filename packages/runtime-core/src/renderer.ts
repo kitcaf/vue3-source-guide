@@ -44,6 +44,8 @@ export interface RendererOptions<
     setElementText(node: HostElement, text: string): void
 }
 
+const EMPTY_OBJ = {}
+
 export function createRenderer<
     HostNode extends RendererNode,
     HostElement extends HostNode
@@ -78,7 +80,7 @@ export function createRenderer<
         const { type, shapeFlag } = n2
         switch (type) {
             case Fragment:
-                processFragment(n1, n2, container)
+                processFragment(n1, n2, container, parent)
                 break;
             case Text:
                 processText(n1, n2, container)
@@ -90,16 +92,21 @@ export function createRenderer<
                 }
                 // 处理Element vNode
                 if (shapeFlag & ShapeFlags.ELEMENT) {
-                    if (!n1) mountElement(n2, container) // 挂载
+                    processElement(n1, n2, container, parent) // 挂载
                 }
                 break;
         }
     }
 
     // 处理Fragment vNode节点（其实本质就是一个不渲染的div，包裹了组件的ui描述）
-    function processFragment(n1: VNode | null, n2: VNode, container: HostElement) {
+    function processFragment(
+        n1: VNode | null,
+        n2: VNode,
+        container: HostElement,
+        parent: ComponentInternalInstance | null
+    ) {
         // 那么就是说我不需要处理它本身代表的元素，直接处理它的孩子
-        mountChildren(n2.children as VNode[], container)
+        mountChildren(n2.children as VNode[], container, parent)
     }
 
     // 处理Text vNode节点
@@ -109,8 +116,42 @@ export function createRenderer<
         hostInsert(textDom, container)
     }
 
+    function processElement(
+        n1: VNode | null,
+        n2: VNode,
+        container: HostElement,
+        parent: ComponentInternalInstance | null
+    ) {
+        if (!n1) { // 挂载 -- 这里需要补充parent参数防止inject/provide链断
+            mountElement(n2, container, parent)
+        }
+        else { // 更新
+            patchElement(n1, n2, container, parent)
+        }
+    }
+
+    function patchElement(
+        n1: VNode,
+        n2: VNode,
+        container: HostElement,
+        parent: ComponentInternalInstance | null
+    ) {
+        // 将旧节点的真实 DOM 赋值给新节点
+        const el = (n2.el = n1.el)
+        const oldProps = n1.props || EMPTY_OBJ
+        const newProps = n2.props || EMPTY_OBJ
+
+        // 更新 Children （下一节）
+
+        // 更新 Props （下一节）
+    }
+
     // 挂载Element vNode节点
-    function mountElement(vnode: VNode, container: HostElement) {
+    function mountElement(
+        vnode: VNode,
+        container: HostElement,
+        parent: ComponentInternalInstance | null
+    ) {
         // 创建真实DOM
         const el = hostCreateElement(vnode.type as string)
         vnode.el = el
@@ -121,7 +162,7 @@ export function createRenderer<
             hostSetElementText(el, children as string)
         }
         else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-            mountChildren(children as VNode[], el)
+            mountChildren(children as VNode[], el, parent)
         }
 
         // 处理属性（初次挂载-preVal都是空的）
@@ -134,9 +175,9 @@ export function createRenderer<
         hostInsert(el, container)
     }
 
-    function mountChildren(children: VNode[], container: HostElement) {
+    function mountChildren(children: VNode[], container: HostElement, parent: ComponentInternalInstance | null) {
         children.forEach(vnode => {
-            patch(null, vnode, container)
+            patch(null, vnode, container, parent)
         })
     }
 
@@ -150,7 +191,7 @@ export function createRenderer<
         // 表示挂载
         if (!n1) mountComponent(n2, container, parent)
         else {
-            // 
+
         }
     }
 
@@ -190,10 +231,10 @@ export function createRenderer<
                 }
             } else { // 更新
                 const { proxy } = instance
-                const oldSubTreeNode = instance.subTree
+                const prevSubTree = instance.subTree
                 // 重新执行组件render
-                const newSubTreeVNode = (instance.subTree = instance.render!.call(proxy, proxy))
-                patch(oldSubTreeNode, newSubTreeVNode, container, instance)
+                const nextSubTree = (instance.subTree = instance.render!.call(proxy, proxy))
+                patch(prevSubTree, nextSubTree, container, instance)
 
             }
         })
