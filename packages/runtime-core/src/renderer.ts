@@ -175,7 +175,10 @@ export function createRenderer<
         hostInsert(el, container)
     }
 
-    function mountChildren(children: VNode[], container: HostElement, parent: ComponentInternalInstance | null) {
+    function mountChildren(
+        children: VNode[],
+        container: HostElement,
+        parent: ComponentInternalInstance | null) {
         children.forEach(vnode => {
             patch(null, vnode, container, parent)
         })
@@ -226,9 +229,12 @@ export function createRenderer<
                 patch(null, subTreeVNode, container, instance)
 
                 initialVNode.el = subTreeVNode.el
+
                 if (m) {
                     invokeArrayFns(m)
                 }
+
+                instance.isMounted = true
             } else { // 更新
                 const { proxy } = instance
                 const prevSubTree = instance.subTree
