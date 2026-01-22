@@ -16,3 +16,10 @@ export function createText(text: string): Text {
 export function setElementText(el: HTMLElement, text: string) {
     el.textContent = text
 }
+
+export function remove(el: HTMLElement) {
+    const parent = el.parentNode
+    if (parent) {
+        parent.removeChild(el)
+    }
+}

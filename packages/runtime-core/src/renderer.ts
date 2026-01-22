@@ -41,7 +41,11 @@ export interface RendererOptions<
     /**
      * 对元素设置文本
      */
-    setElementText(node: HostElement, text: string): void
+    setElementText(node: HostElement, text: string): void,
+    /**
+     * 移除某个元素
+     */
+    remove(el: HostElement): void
 }
 
 const EMPTY_OBJ = {}
@@ -58,7 +62,8 @@ export function createRenderer<
         patchProp: hostPatchProp,
         insert: hostInsert,
         createText: hostCreateText,
-        setElementText: hostSetElementText
+        setElementText: hostSetElementText,
+        remove: hostRemove
     } = options
 
     // render: 渲染入口 调用 patch，处理挂载逻辑
@@ -145,6 +150,54 @@ export function createRenderer<
         patchProps(el as HostElement, oldProps, newProps)
 
         // 更新 Children （下一节）
+        // container是el，因为children和本身元素没有关系
+        patchChildren(n1, n2, el as HostElement, parent)
+    }
+
+    function patchChildren(
+        n1: VNode,
+        n2: VNode,
+        container: HostElement,
+        parent: ComponentInternalInstance | null
+    ) {
+        const { shapeFlag: prevShapeFlag } = n1; // 旧
+        const c1 = n1.children
+        const { shapeFlag } = n2 // 新
+        const c2 = n2.children
+
+        // 新节点是文本
+        if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+            // 旧是数组
+            if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+                unmountChildren(c1 as VNode[])
+            }
+
+            // 旧是文本【设置新文本】 - 因为无论如何都是要设置新文本的
+            if (c1 != c2) { // 修改这个元素
+                hostSetElementText(container, c2 as string)
+            }
+        }
+
+        // 新节点是数组
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+            // 如果旧节点是文本
+            if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+                // 清除文本
+                hostSetElementText(container, "")
+                // 遍历所有的元素执行递归 - 挂载新的数组
+                mountChildren(c2 as VNode[], container, parent)
+            } else { // 旧节点是数组
+                console.log("diff 算法")
+            }
+        }
+
+    }
+
+    function unmountChildren(children: VNode[]) {
+        for (let i = 0; i < children.length; i++) {
+            const el = children[i].el;
+            hostRemove(el as HostElement);
+        }
     }
 
     function patchProps(el: HostElement, oldProps: any, newProps: any) {

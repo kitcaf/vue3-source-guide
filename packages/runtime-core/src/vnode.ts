@@ -23,7 +23,7 @@ export interface VNode {
     props: any, // 参数（透传）
     children: VNodeChildren,
     shapeFlag: number,
-    el: RendererNode | null
+    el: RendererElement | null
 }
 
 /**
