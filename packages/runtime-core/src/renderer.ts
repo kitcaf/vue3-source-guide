@@ -83,6 +83,11 @@ export function createRenderer<
         container: HostElement,
         parent: ComponentInternalInstance | null = null) {
         const { type, shapeFlag } = n2
+        // 更新：如果节点没有复用，需要对这个节点及其子节点全部卸载
+        if (n1 && n1.type !== n2.type) {
+            unmount(n1); // 执行销毁
+            n1 = null;   // 强制走挂载流程
+        }
         switch (type) {
             case Fragment:
                 processFragment(n1, n2, container, parent)
@@ -101,6 +106,37 @@ export function createRenderer<
                 }
                 break;
         }
+    }
+
+    function unmount(vnode: VNode) {
+        /**
+         * 需要分情况讨论，Element、Component
+         * 主要原因是Component是存在监听事件的，并且是会被通知更新的，一定要消耗组件实例
+         * 还有就是一些生命周期函数比如unmounted等函数
+         * 防止内存泄露
+         */
+        const { shapeFlag, el, children } = vnode;
+
+        if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) { // 组件
+            unmountComponent(vnode.component!)
+        } else { // 元素
+            hostRemove(vnode.el as HostElement)
+        }
+    }
+
+    function unmountComponent(instance: ComponentInternalInstance) {
+
+        const { update, subTree } = instance;
+
+        // 停止 effect 追踪
+        if (update) {
+            update.stop(); // 停止更新响应式系统里实现的
+        }
+
+        //递归销毁子树
+        unmount(subTree!);
+
+        // 生命周期函数 ... 等待实现
     }
 
     // 处理Fragment vNode节点（其实本质就是一个不渲染的div，包裹了组件的ui描述）
@@ -296,7 +332,7 @@ export function createRenderer<
         initialVNode: VNode,
         container: HostElement) {
 
-        effect(() => {
+        instance.update = effect(() => {
             if (!instance.isMounted) { // 挂载
                 const { proxy, bm, m } = instance
                 if (bm) {

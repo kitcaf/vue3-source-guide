@@ -1,5 +1,5 @@
 import { ShapeFlags } from "@mini-vue/shared"
-import { ComponentOptions, Slot } from "./component"
+import { ComponentInternalInstance, ComponentOptions, Slot } from "./component"
 import { RendererElement, RendererNode } from "./renderer"
 
 export const Fragment = Symbol("Fragment")
@@ -23,7 +23,8 @@ export interface VNode {
     props: any, // 参数（透传）
     children: VNodeChildren,
     shapeFlag: number,
-    el: RendererElement | null
+    el: RendererElement | null,
+    component: ComponentInternalInstance | null,
 }
 
 /**
@@ -42,7 +43,8 @@ export function createVNode(
         props,
         children: children ?? null,
         shapeFlag: getShapeFlag(type),
-        el: null
+        el: null,
+        component: null
     }
 
     // 叠加状态
@@ -60,6 +62,11 @@ export function createVNode(
     }
 
     // 判断子节点是否是插槽
+    if (vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN) {
+        if (typeof vnode.children === 'object') {
+            vnode.shapeFlag |= ShapeFlags.SLOTS_CHILDREN
+        }
+    }
     return vnode
 }
 

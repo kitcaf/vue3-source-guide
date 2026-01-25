@@ -42,6 +42,7 @@ export interface ComponentInternalInstance {
     // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
     render: InternalRenderFunction | null;
     emit: (...args: any) => void,
+    update: any | null, // effect函数的返回值
     // --- 生命周期相关 ---
     bm: Function[] | null, // onBeforeMounted
     m: Function[] | null, // onMounted
@@ -70,6 +71,7 @@ export function createComponentInstance(
         parent: parent,
         isMounted: false,
         subTree: null,
+        update: null,
         // 初始化App.vue的parent一定是null, 需要初始化为{} (Object.create(null))
         // 其他组件都是parent.privides
         provides: parent ? parent.provides : Object.create(null),
@@ -84,6 +86,9 @@ export function createComponentInstance(
     // 不需要自己处理emit(instance, event, ...) 这样调用
     // 直接就是emit(event)调用
     instance.emit = emit.bind(null, instance)
+
+    // vnode也要双向保存
+    vnode.component = instance
     return instance
 }
 
