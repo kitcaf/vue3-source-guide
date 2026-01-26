@@ -83,12 +83,15 @@ export function createRenderer<
         container: HostElement,
         parent: ComponentInternalInstance | null = null) {
         const { type, shapeFlag } = n2
-        // 更新：如果节点没有复用，需要对这个节点及其子节点全部卸载
+        // 节点类型复用更新：
+        // （1）如果节点不能复用，需要对这个节点及其子节点全部卸载
+        // （2）如果节点可以复用，继续深入判断需要更新哪些内容，比如Element的属性、Text节点的内容...
         if (n1 && !isSameVNodeType(n1, n2)) {
             unmount(n1)
             n1 = null // 走挂载流程
         }
 
+        // 
         switch (type) {
             case Fragment:
                 processFragment(n1, n2, container, parent)
@@ -167,9 +170,16 @@ export function createRenderer<
 
     // 处理Text vNode节点
     function processText(n1: VNode | null, n2: VNode, container: HostElement) {
-        const { children } = n2
-        const textDom = (n2.el = hostCreateText(children as string)!)
-        hostInsert(textDom, container)
+        if (!n1) { // 挂载
+            const { children } = n2
+            const textDom = (n2.el = hostCreateText(children as string)!)
+            hostInsert(textDom, container)
+        } else { // 更新
+            const el = (n2.el = n1.el!)
+            if (n1.children !== n2.children) {
+                hostSetElementText(el as HostElement, n2.children as string)
+            }
+        }
     }
 
     function processElement(

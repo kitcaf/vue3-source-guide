@@ -1,0 +1,157 @@
+# 3.4.3 节点复用更新
+
+**更新发生**在组件的render函数中，也就是会对组件及其所在的子节点进行新旧Vnode树的对比
+
+因此如果存在**某个新旧Vnode节点类型都不同的情况下：需要对旧节点及其所有的子节点进行销毁操作，由新Vnode树进行重新挂载**
+
+**主要原因是：**
+
+- **防止无意义的对比 (Bail out)**：如果旧节点是 `<div>`，新节点是 `<p>`，它们的 DOM 属性完全不同，没有任何对比的价值。直接把 `div` 删了，重新挂载 `p` 是最安全、最快的做法
+- **保证类型安全**：如果 `n1.type !== n2.type`，强行把 `n1.el` 赋值给 `n2.el` 会导致后续所有的 DOM 操作（比如 `patchProps`）都在错误的 DOM 标签上进行，必然报错。
+
+**销毁操作是**一颗树的**从下到上的递归**过程。**由于Component的存在，一定要保证先将其销毁防止内存泄露（存在监听方法、生命周期），所以每一个节点都要判断，而不能因为类型不同直接调用DOM移除这个元素，而应该检查它的子节点是否存在Component，所有整个过程是一个从叶节点到当前节点的递归销毁的过程**
+
+**核心：分类讨论、树的递归处理**
+
+**分类讨论：**目前是存在**Element、Component、Fragment、Text**
+
+- **Fragment：它自己是没有DOM的，直接处理它的Children，某组件的render函数的根节点**
+- **Component：执行组件卸载逻辑 (stop effect, 生命周期等)**
+- **Element：如果有子节点，必须先递归卸载子节点（因为子节点存在组件）**
+- **Text：叶子节点**
+
+### 基础实现：
+
+- 第一步：在patch函数的开始加入判断复用判断，如果不同执行销毁操作
+
+```tsx
+function patch(
+    n1: VNode | null,
+    n2: VNode,
+    container: HostElement,
+    parent: ComponentInternalInstance | null = null) {
+    const { type, shapeFlag } = n2
+    // 更新：如果节点没有复用，需要对这个节点及其子节点全部卸载
+    if (n1 && n1.type !== n2.type) {
+        unmount(n1); // 执行销毁
+        n1 = null;   // 强制走挂载流程
+    }
+    ...
+```
+
+- 第二步：实现`unmount`方法**，就是一个树的从下到上的递归过程**
+
+```tsx
+function unmount(vnode: VNode) {
+    /**
+     * 需要分情况讨论，Element、Component、Fragment、Text
+     * （1）Fragment：它自己是没有DOM的，直接处理它的Children，某组件的render函数的根节点
+     * （2）Component：执行组件卸载逻辑 (stop effect, 生命周期等)
+     *  ... 
+     */
+    const { shapeFlag, type } = vnode;
+
+    if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) { // 组件
+        unmountComponent(vnode.component!) // 里面会继续递归subTree
+        return; // Component是没有DOM元素的，直接return
+    }
+    if (type === Fragment) {
+        unmountChildren(vnode.children as VNode[])
+    }
+    // 如果是Element，需要查一下children，如果是Array需要继续递归
+    if (shapeFlag & ShapeFlags.ELEMENT && shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        unmountChildren(vnode.children as VNode[])
+        return; // 和Component同理
+    }
+
+    // 子节点都递归判断完了，才进行销毁当前DOM元素
+    hostRemove(vnode.el as HostElement); //DOM方法已经实现过了
+}
+```
+
+- 第三步：**实现**`unmountComponent`**方法和对应的辅助方法**
+
+```tsx
+function unmountComponent(instance: ComponentInternalInstance) {
+    const { update, subTree } = instance;
+
+    // 停止 effect 追踪
+    if (update) {
+        update.stop(); // 停止更新响应式系统里实现的
+    }
+
+    //递归销毁子树
+    unmount(subTree!);
+
+    // 其他生命周期函数 ... 等待实现
+}
+
+function unmountChildren(children: VNode[]) {
+    for (let i = 0; i < children.length; i++) {
+        const el = children[i].el;
+        hostRemove(el as HostElement);
+    }
+}
+```
+
+## 优化：状态残留
+
+当前的复用判断会导致一个问题**状态残留**：
+
+```tsx
+if (n1 && n1.type !== n2.type) {
+    unmount(n1); // 执行销毁
+    n1 = null;   // 强制走挂载流程
+}
+```
+
+让我们看一个最真实的场景：一个待办列表，每一项只是一个简单的原生的 `<input>` 标签。
+
+初始状态 (响应式数据：`['任务A', '任务B']` 一个列表)
+
+- VNode 1 (`type: input`) -> 对应真实 DOM 1。用户在里面输入了文字：**"买牛奶"**。
+- VNode 2 (`type: input`) -> 对应真实 DOM 2。用户在里面输入了文字：**"写代码"**。
+
+**操作**：现在，我们通过响应式数据删除了“任务A”。
+
+- 响应式数据变了，`render` 重新执行。
+- 生成了新的 VNode 树。因为删了A，新树现在只有一个节点了：**VNode(新) 代表“任务B”**。
+- 进入 `patch(n1, n2)` 进行对比。
+    - `n1` 是原本的第一个节点（A）。
+    - `n2` 是现在的第一个节点（B）。
+- 检查 `if (n1.type === n2.type)`。发现它们都是 `input`。进行类型复用
+- 出错了：**页面上剩下的那个 `<input>` 框里，显示的竟然是 "买牛奶"！但实际上这个节点现在代表的应该是“任务B”。**
+
+本质原因是我们要会区分：**“受控状态”** 和 **“非受控状态”** 是两件事。
+
+- **受控状态 (Vue 的响应式数据)**：比如 `props: { id: 'foo' }`，文本内容 `text: 'hello'`。**这些数据在 `render` 函数里**，Vue 知道它们变了，在 `patchElement` 时也会去更新它们。
+- **非受控状态 (DOM 的原生状态)**：比如 `<input>` 框里用户正在输入的文字、`<video>` 当前播放到了第几秒、`<div>` 滚动条滚到了哪里。**这些状态直接存在于浏览器底层的真实 DOM 对象上，Vue 的 VNode 里根本没记录这些信息。**
+
+### key属性
+
+`key` 的作用，就是给节点加上**唯一身份证，同时在节点复用的时候加入对key的判断**
+
+**其实我们在开发的过程中经常使用**，**在v-for中一定要给item加入唯一性的key属性**
+
+### 实现
+
+```tsx
+// 加入一个新的判断函数，VNode 新增一个key类型
+function isSameVNodeType(n1: VNode | null, n2: VNode,) {
+    return n1?.key === n2.key && n1?.type === n2.type
+}
+
+function patch(
+    n1: VNode | null,
+    n2: VNode,
+    container: HostElement,
+    parent: ComponentInternalInstance | null = null) {
+    const { type, shapeFlag } = n2
+    // 更新：如果节点没有复用，需要对这个节点及其子节点全部卸载 【改】
+    if (n1 && !isSameVNodeType(n1, n2)) {
+        unmount(n1)
+        n1 = null // 走挂载流程
+    }
+    ... 
+}
+```
