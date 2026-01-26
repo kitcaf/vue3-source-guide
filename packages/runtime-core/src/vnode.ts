@@ -25,6 +25,7 @@ export interface VNode {
     shapeFlag: number,
     el: RendererElement | null,
     component: ComponentInternalInstance | null,
+    key?: string | number | symbol, // 唯一标识符号
 }
 
 /**

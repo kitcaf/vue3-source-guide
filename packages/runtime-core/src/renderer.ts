@@ -84,10 +84,11 @@ export function createRenderer<
         parent: ComponentInternalInstance | null = null) {
         const { type, shapeFlag } = n2
         // 更新：如果节点没有复用，需要对这个节点及其子节点全部卸载
-        if (n1 && n1.type !== n2.type) {
-            unmount(n1); // 执行销毁
-            n1 = null;   // 强制走挂载流程
+        if (n1 && !isSameVNodeType(n1, n2)) {
+            unmount(n1)
+            n1 = null // 走挂载流程
         }
+
         switch (type) {
             case Fragment:
                 processFragment(n1, n2, container, parent)
@@ -108,24 +109,37 @@ export function createRenderer<
         }
     }
 
+    function isSameVNodeType(n1: VNode | null, n2: VNode,) {
+        return n1?.key === n2.key && n1?.type === n2.type
+    }
+
     function unmount(vnode: VNode) {
         /**
-         * 需要分情况讨论，Element、Component
-         * 主要原因是Component是存在监听事件的，并且是会被通知更新的，一定要消耗组件实例
-         * 还有就是一些生命周期函数比如unmounted等函数
-         * 防止内存泄露
+         * 需要分情况讨论，Element、Component、Fragment、Text
+         * （1）Fragment：它自己是没有DOM的，直接处理它的Children，某组件的render函数的根节点
+         * （2）Component：执行组件卸载逻辑 (stop effect, 生命周期等)
+         *  ... 
          */
-        const { shapeFlag, el, children } = vnode;
+        const { shapeFlag, type } = vnode;
 
         if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) { // 组件
-            unmountComponent(vnode.component!)
-        } else { // 元素
-            hostRemove(vnode.el as HostElement)
+            unmountComponent(vnode.component!) // 里面会继续递归subTree
+            return; // Component是没有DOM元素的，直接return
         }
+        if (type === Fragment) {
+            unmountChildren(vnode.children as VNode[])
+            return; // 和Component同理
+        }
+        // 如果是Element，需要查一下children，如果是Array需要继续递归
+        if (shapeFlag & ShapeFlags.ELEMENT && shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+            unmountChildren(vnode.children as VNode[]) // 这里就不要有return方法
+        }
+
+        // 子节点都递归判断完了，才进行销毁当前DOM元素
+        hostRemove(vnode.el as HostElement); // DOM方法
     }
 
     function unmountComponent(instance: ComponentInternalInstance) {
-
         const { update, subTree } = instance;
 
         // 停止 effect 追踪
@@ -136,7 +150,7 @@ export function createRenderer<
         //递归销毁子树
         unmount(subTree!);
 
-        // 生命周期函数 ... 等待实现
+        // 其他生命周期函数 ... 等待实现
     }
 
     // 处理Fragment vNode节点（其实本质就是一个不渲染的div，包裹了组件的ui描述）
@@ -146,8 +160,9 @@ export function createRenderer<
         container: HostElement,
         parent: ComponentInternalInstance | null
     ) {
-        // 那么就是说我不需要处理它本身代表的元素，直接处理它的孩子
-        mountChildren(n2.children as VNode[], container, parent)
+        if (n1 === null) { // 挂载操作
+            mountChildren(n2.children as VNode[], container, parent)
+        }
     }
 
     // 处理Text vNode节点
