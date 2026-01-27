@@ -91,7 +91,6 @@ export function createRenderer<
             n1 = null // 走挂载流程
         }
 
-        // 
         switch (type) {
             case Fragment:
                 processFragment(n1, n2, container, parent)
@@ -165,6 +164,11 @@ export function createRenderer<
     ) {
         if (n1 === null) { // 挂载操作
             mountChildren(n2.children as VNode[], container, parent)
+        } else { // 更新流程  Fragment它的核心在children
+            // 但是你要注意这里不能如下的做法:
+            // patch(n1.children, n2.children, container, parent)
+            // 因为children一定是vNode[], patch只是对vNode节点进行，也就是patch只能一个一个节点来
+
         }
     }
 
@@ -174,8 +178,8 @@ export function createRenderer<
             const { children } = n2
             const textDom = (n2.el = hostCreateText(children as string)!)
             hostInsert(textDom, container)
-        } else { // 更新
-            const el = (n2.el = n1.el!)
+        } else { // 更新 （没有孩子了不需要继续递归patch）
+            const el = (n2.el = n1.el!) // 复用el，因为类型是一致的，只是里面的标签包含的内容不一致
             if (n1.children !== n2.children) {
                 hostSetElementText(el as HostElement, n2.children as string)
             }
