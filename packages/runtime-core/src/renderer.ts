@@ -1,8 +1,10 @@
 import { ShapeFlags } from "@mini-vue/shared"
 import { createAppAPI } from "./apiCreateApp"
 import { Fragment, Text, type VNode } from "./vnode";
-import { ComponentInternalInstance, createComponentInstance, setupComponent } from './component';
+import { ComponentInternalInstance, createComponentInstance, setupComponent, Slot } from './component';
 import { effect } from "@mini-vue/reactivity";
+import { initProps } from "./componentProps";
+import { initSlots } from "./componentSlots";
 
 /**
  * 最基础的单位。它可以是元素（div），也可以是纯文本（"hello"）
@@ -105,7 +107,7 @@ export function createRenderer<
                 }
                 // 处理Element vNode
                 if (shapeFlag & ShapeFlags.ELEMENT) {
-                    processElement(n1, n2, container, parent) // 挂载
+                    processElement(n1, n2, container, parent)
                 }
                 break;
         }
@@ -165,10 +167,8 @@ export function createRenderer<
         if (n1 === null) { // 挂载操作
             mountChildren(n2.children as VNode[], container, parent)
         } else { // 更新流程  Fragment它的核心在children
-            // 但是你要注意这里不能如下的做法:
-            // patch(n1.children, n2.children, container, parent)
-            // 因为children一定是vNode[], patch只是对vNode节点进行，也就是patch只能一个一个节点来
-
+            // 直接对比children
+            patchChildren(n1, n2, container, parent!)
         }
     }
 
@@ -211,10 +211,10 @@ export function createRenderer<
         const oldProps = n1.props || EMPTY_OBJ // 保证非空
         const newProps = n2.props || EMPTY_OBJ // 保存非空
 
-        // 更新 Props （下一节）
+        // 更新 Props 
         patchProps(el as HostElement, oldProps, newProps)
 
-        // 更新 Children （下一节）
+        // 更新 Children 
         // container是el，因为children和本身元素没有关系
         patchChildren(n1, n2, el as HostElement, parent)
     }
@@ -252,7 +252,7 @@ export function createRenderer<
                 // 遍历所有的元素执行递归 - 挂载新的数组
                 mountChildren(c2 as VNode[], container, parent)
             } else { // 旧节点是数组
-                console.log("diff 算法")
+                console.log("核心diff 算法")
             }
         }
 
@@ -337,9 +337,41 @@ export function createRenderer<
     ) {
         // 表示挂载
         if (!n1) mountComponent(n2, container, parent)
-        else {
+        // 被动更新造成的组件更新
+        else updateComponent(n1, n2, container, parent)
+    }
 
+    function updateComponent(
+        n1: VNode,
+        n2: VNode,
+        container: HostElement,
+        parent: ComponentInternalInstance | null
+    ) {
+        // 复用组件实例 【重要】
+        const instance = (n2.component = n1?.component!)
+        if (shouldUpdateComponent(n1, n2)) {
+            instance.next = n2 // 保存下一个状态的vNode
+            instance.update() // 执行组件更新操作
+        } else { // 不需要更新
+            n2.el = n1?.el!
+            instance.vnode = n2
         }
+    }
+
+    function shouldUpdateComponent(n1: VNode, n2: VNode) {
+        const { props: prevProps } = n1;
+        const { props: nextProps } = n2;
+
+        // 简单实现，后期编辑器阶段辅助进行全量对比优化
+        if (prevProps != nextProps) {
+            return true
+        }
+
+        // 如果有插槽也是同理简单判断，后期会进行优化
+        if (n2.children) {
+            return true
+        }
+        return false
     }
 
     function mountComponent(
@@ -379,15 +411,41 @@ export function createRenderer<
                 }
 
                 instance.isMounted = true
-            } else { // 更新
+            } else { // 更新（主动更新）
+                // 更新的流程还是不变的，只是被动更新需要对原组件实例进行属性赋值
+                // 【新增】
+                const { next, vnode } = instance;
+                if (next) {
+                    next.el = vnode.el // 先将之前vnode.el赋值给新vnode.el 起一个绑定作用
+                    updateComponentPreRender(instance, next) // 属性赋值
+                }
+
+                // 保持不变
                 const { proxy } = instance
                 const prevSubTree = instance.subTree
                 // 重新执行组件render
                 const nextSubTree = (instance.subTree = instance.render!.call(proxy, proxy))
                 patch(prevSubTree, nextSubTree, container, instance)
+                instance.vnode.el = nextSubTree.el
+
 
             }
         })
+    }
+
+    function updateComponentPreRender(instance: ComponentInternalInstance, nextVNode: VNode) {
+        // 被动更新：父组件只能影响props 和 children 
+        // ### 先清空操作
+        instance.next = null
+        instance.vnode = nextVNode; // 这里一定要initSlots之前执行，因为initSlots会读instance.vnode
+
+        // ## 再进行赋值操作 Props Children
+        // [更新 Props] 这里可以调用initProps进行重新修改引用
+        initProps(instance, nextVNode.props);
+        // [更新 Children] 不能直接 instance.slots = nextVNode.children
+        // 原因是必须和initSlots
+        instance.slots = {} // 因为是更新将之前的全部清空
+        initSlots(instance, nextVNode.children as Record<string, Slot>)
     }
 
     return {

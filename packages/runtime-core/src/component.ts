@@ -39,6 +39,7 @@ export interface ComponentInternalInstance {
     provides: Record<string, object>,
     isMounted: Boolean, // 组件是否挂载
     subTree: VNode | null,
+    next: VNode | null, // 被动更新下，待更新vNode节点
     // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
     render: InternalRenderFunction | null;
     emit: (...args: any) => void,
@@ -72,6 +73,7 @@ export function createComponentInstance(
         isMounted: false,
         subTree: null,
         update: null,
+        next: null,
         // 初始化App.vue的parent一定是null, 需要初始化为{} (Object.create(null))
         // 其他组件都是parent.privides
         provides: parent ? parent.provides : Object.create(null),
