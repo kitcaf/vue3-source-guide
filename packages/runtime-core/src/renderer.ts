@@ -5,6 +5,7 @@ import { ComponentInternalInstance, createComponentInstance, setupComponent, Slo
 import { effect } from "@mini-vue/reactivity";
 import { initProps } from "./componentProps";
 import { initSlots } from "./componentSlots";
+import { queueJob } from "./scheduler";
 
 /**
  * 最基础的单位。它可以是元素（div），也可以是纯文本（"hello"）
@@ -427,8 +428,10 @@ export function createRenderer<
                 const nextSubTree = (instance.subTree = instance.render!.call(proxy, proxy))
                 patch(prevSubTree, nextSubTree, container, instance)
                 instance.vnode.el = nextSubTree.el
-
-
+            }
+        }, {
+            scheduler: () => {
+                queueJob(instance.update) // 将组件的渲染函数重新输入就可以
             }
         })
     }
