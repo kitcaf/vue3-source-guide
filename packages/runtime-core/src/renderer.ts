@@ -352,7 +352,7 @@ export function createRenderer<
         const instance = (n2.component = n1?.component!)
         if (shouldUpdateComponent(n1, n2)) {
             instance.next = n2 // 保存下一个状态的vNode
-            instance.update() // 执行组件更新操作
+            queueJob(instance.update); // 执行组件更新操作，也是放入微队列中
         } else { // 不需要更新
             n2.el = n1?.el!
             instance.vnode = n2

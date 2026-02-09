@@ -32,7 +32,7 @@ export interface VNode {
  * createVNode
  * @param type //（不要认为只是一个字符串）组件对象 或 HTML 标签名 (如 'div')
  * @param props // 属性
- * @param children // 子节点（可以是HTML元素也可以是组件）
+ * @param children // 子节点（可以是HTML元素也可以是组件或者 {{}} 里面的代码string）
  */
 export function createVNode(
     type: vNodeType,
