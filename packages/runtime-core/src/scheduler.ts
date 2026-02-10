@@ -35,7 +35,8 @@ function queueFlush() {
 function flushJobs() {
     // 执行了微队列的函数，isFlushPending可以设置回false
     isFlushPending = false
-
+    // 排序
+    queue.sort((a, b) => a.id - b.id)
     let job;
     while ((job = queue.shift()) != undefined) {
         job && job()

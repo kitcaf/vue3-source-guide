@@ -5,6 +5,8 @@ import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 import { initSlots } from "./componentSlots";
 import { type VNode } from "./vnode";
 
+let uid = 0; // 全局 ID 计数器
+
 //render的类型，InternalRenderFunction = () => VNode;也可以
 //但是因为render函数还会挂载一些额外的属性
 //因此render函数就写成它的对象形式
@@ -40,6 +42,7 @@ export interface ComponentInternalInstance {
     isMounted: Boolean, // 组件是否挂载
     subTree: VNode | null,
     next: VNode | null, // 被动更新下，待更新vNode节点
+    uid: number; // 唯一标识
     // --- 内部方法（里面就是调用h方法 --- 返回组件的ui描述vnode） ---
     render: InternalRenderFunction | null;
     emit: (...args: any) => void,
@@ -74,6 +77,7 @@ export function createComponentInstance(
         subTree: null,
         update: null,
         next: null,
+        uid: uid++,
         // 初始化App.vue的parent一定是null, 需要初始化为{} (Object.create(null))
         // 其他组件都是parent.privides
         provides: parent ? parent.provides : Object.create(null),

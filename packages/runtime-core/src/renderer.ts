@@ -434,6 +434,7 @@ export function createRenderer<
                 queueJob(instance.update) // 将组件的渲染函数重新输入就可以
             }
         })
+        instance.update.id = instance.uid
     }
 
     function updateComponentPreRender(instance: ComponentInternalInstance, nextVNode: VNode) {
