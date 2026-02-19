@@ -279,6 +279,7 @@ export function createRenderer<
         c2: VNode[], // 新数组
         container: HostElement,
         parentComponent: ComponentInternalInstance | null = null,
+        parentAnchor: RendererElement | null = null // 父级锚点 解决 Fragment的元素漂移问题
     ) {
         // ### 预处理 双端对比 
         let i = 0
@@ -320,7 +321,7 @@ export function createRenderer<
                 // 这里就是核心计算anchor（往哪一个DOM元素中增加）
                 // 这里的 nextPos 是新列表当前处理片段的后面一个元素
                 const nextPos = e2 + 1 // DOM位置/null位置
-                const anchor = nextPos < l2 ? c2[nextPos].el : null
+                const anchor = nextPos < l2 ? c2[nextPos].el : parentAnchor
                 // while 循环中的anchor是不用变的，本质就是从前向后增加
                 // [a] -> [a, b, c]: anchor是null，b，c依次push到队尾
                 // [c] -> [a, b, c]: anchor是c，此时a，b依次加入到c前面，b形成了插队没有问题
