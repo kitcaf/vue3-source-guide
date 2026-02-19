@@ -32,13 +32,14 @@ export class ReactiveEffect {
         if (!this.active) {
             return this._fn(); // 直接执行，不要导致设置activatEffect导致依赖收集
         }
-        
+
 
         //（1）effect函数 （2）依赖更新 记录当前创建的ReactiveEffect对象
         activatEffect = this
         //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
         const result = this._fn()
-        //置为空
+        //置为空 
+        // BUG
         activatEffect = undefined
 
         return result

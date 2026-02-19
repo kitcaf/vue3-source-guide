@@ -74,7 +74,6 @@ export function createRenderer<
         patch(null, vnode, container)
     }
 
-    //patch: 核心 Diff 算法入口
     // 作用：（1）挂载（2）更新
     // n1 旧VNode（虚拟节点树）- null 表示挂载
     // 表现形式上是节点但有children变量本质就是VNode树
@@ -84,7 +83,9 @@ export function createRenderer<
         n1: VNode | null,
         n2: VNode,
         container: HostElement,
-        parent: ComponentInternalInstance | null = null) {
+        parent: ComponentInternalInstance | null = null,
+        anchor: RendererElement | null = null // 锚点
+    ) {
         const { type, shapeFlag } = n2
         // 节点类型复用更新：
         // （1）如果节点不能复用，需要对这个节点及其子节点全部卸载
@@ -163,18 +164,24 @@ export function createRenderer<
         n1: VNode | null,
         n2: VNode,
         container: HostElement,
-        parent: ComponentInternalInstance | null
+        parent: ComponentInternalInstance | null,
+        anchor = null // 锚点
     ) {
         if (n1 === null) { // 挂载操作
             mountChildren(n2.children as VNode[], container, parent)
         } else { // 更新流程  Fragment它的核心在children
             // 直接对比children
-            patchChildren(n1, n2, container, parent!)
+            patchChildren(n1, n2, container, parent!, anchor)
         }
     }
 
     // 处理Text vNode节点
-    function processText(n1: VNode | null, n2: VNode, container: HostElement) {
+    function processText(
+        n1: VNode | null,
+        n2: VNode,
+        container: HostElement,
+        anchor = null // 锚点
+    ) {
         if (!n1) { // 挂载
             const { children } = n2
             const textDom = (n2.el = hostCreateText(children as string)!)
@@ -191,13 +198,14 @@ export function createRenderer<
         n1: VNode | null,
         n2: VNode,
         container: HostElement,
-        parent: ComponentInternalInstance | null
+        parent: ComponentInternalInstance | null,
+        anchor = null // 锚点
     ) {
         if (!n1) { // 挂载 -- 这里需要补充parent参数防止inject/provide链断
-            mountElement(n2, container, parent)
+            mountElement(n2, container, parent, anchor)
         }
         else { // 更新
-            patchElement(n1, n2, container, parent)
+            patchElement(n1, n2, container, parent, anchor)
         }
     }
 
@@ -205,7 +213,8 @@ export function createRenderer<
         n1: VNode,
         n2: VNode,
         container: HostElement,
-        parent: ComponentInternalInstance | null
+        parent: ComponentInternalInstance | null,
+        anchor = null // 锚点
     ) {
         // 将旧节点的真实 DOM 赋值给新节点
         const el = (n2.el = n1.el)
@@ -217,14 +226,15 @@ export function createRenderer<
 
         // 更新 Children 
         // container是el，因为children和本身元素没有关系
-        patchChildren(n1, n2, el as HostElement, parent)
+        patchChildren(n1, n2, el as HostElement, parent, anchor)
     }
 
     function patchChildren(
         n1: VNode,
         n2: VNode,
         container: HostElement,
-        parent: ComponentInternalInstance | null
+        parent: ComponentInternalInstance | null,
+        anchor: HostElement | null // 【新增】
     ) {
         const { shapeFlag: prevShapeFlag } = n1; // 旧
         const c1 = n1.children
@@ -244,7 +254,7 @@ export function createRenderer<
             }
         }
 
-        // 新节点是数组
+        // children新节点是数组
         if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
             // 如果旧节点是文本
             if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
@@ -252,11 +262,82 @@ export function createRenderer<
                 hostSetElementText(container, "")
                 // 遍历所有的元素执行递归 - 挂载新的数组
                 mountChildren(c2 as VNode[], container, parent)
-            } else { // 旧节点是数组
-                console.log("核心diff 算法")
+            } else { // 旧节点是数组 新数组 vs 旧数组 diff算法
+                //  预处理 - 双端对比 (Syncing) 核心diff算法
+
             }
         }
 
+    }
+
+    /**
+     * diff 算法核心文件
+     * 也就是新数组与旧数组的对比
+     */
+    function patchKeyedChildren(
+        c1: VNode[],  // 旧数组
+        c2: VNode[], // 新数组
+        container: HostElement,
+        parentComponent: ComponentInternalInstance | null = null,
+    ) {
+        // ### 预处理 双端对比 
+        let i = 0
+        const l2 = c2.length
+        let e1 = c1.length - 1 // 旧数组尾指针
+        let e2 = c2.length - 1 // 新数组尾指针
+
+        // 1. 左端对比
+        while (i <= e1 && i <= e2) {
+            const n1 = c1[i]
+            const n2 = c2[i]
+            if (isSameVNodeType(n1, n2)) { // 直接patch（对这个vNode进行patch - 继续去比较属性等不同）
+                patch(n1, n2, container, parentComponent)
+            } else {
+                break; //遇到不同的直接break
+            }
+            i++
+        }
+
+        // 2. 右端对比 i 可以保持不用动的
+        while (i <= e1 && i <= e2) {
+            const n1 = c1[e1]
+            const n2 = c2[e2]
+            if (isSameVNodeType(n1, n2)) {
+                patch(n1, n2, container, parentComponent)
+            } else {
+                break
+            }
+            e1--
+            e2--
+        }
+
+        // ## 预处理 双端对比的两种特殊情况
+        // （1）仅有新增 (New > Old)：只是新数组增加了元素（前插/后插）
+        // （2）仅有删除 (Old > New)：新数组在旧数组中发现（前删/后删）
+        if (i > e1) { // 旧数组走完了
+            if (i <= e2) {  // 新数组还存在
+                // 前插 / 后插
+                // 这里就是核心计算anchor（往哪一个DOM元素中增加）
+                // 这里的 nextPos 是新列表当前处理片段的后面一个元素
+                const nextPos = e2 + 1 // DOM位置/null位置
+                const anchor = nextPos < l2 ? c2[nextPos].el : null
+                // while 循环中的anchor是不用变的，本质就是从前向后增加
+                // [a] -> [a, b, c]: anchor是null，b，c依次push到队尾
+                // [c] -> [a, b, c]: anchor是c，此时a，b依次加入到c前面，b形成了插队没有问题
+                while (i <= e2) {
+                    patch(null, c2[i], container, parentComponent, anchor)
+                    i++
+                }
+            }
+        }
+        // 仅有删除
+        else if (i > e2) { //新数组走完了
+            // 前删和后删直接删除DOM就可以不用去处理anchor
+            while (i <= e1) {
+                hostRemove(c1[i].el as HostElement)
+                i++
+            }
+        }
     }
 
     function unmountChildren(children: VNode[]) {
@@ -295,7 +376,8 @@ export function createRenderer<
     function mountElement(
         vnode: VNode,
         container: HostElement,
-        parent: ComponentInternalInstance | null
+        parent: ComponentInternalInstance | null,
+        anchor = null // 锚点
     ) {
         // 创建真实DOM
         const el = hostCreateElement(vnode.type as string)
@@ -317,7 +399,7 @@ export function createRenderer<
             hostPatchProp(el, key, null, val)
         }
         //插入到容器中
-        hostInsert(el, container)
+        hostInsert(el, container, anchor)
     }
 
     function mountChildren(
@@ -334,7 +416,8 @@ export function createRenderer<
         n1: VNode | null,
         n2: VNode,
         container: HostElement,
-        parent: ComponentInternalInstance | null
+        parent: ComponentInternalInstance | null,
+        anchor = null // 锚点
     ) {
         // 表示挂载
         if (!n1) mountComponent(n2, container, parent)

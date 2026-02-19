@@ -6,7 +6,11 @@ export function insert(
     el: HTMLElement,
     parent: HTMLElement,
     anchor?: any): void {
-    parent.appendChild(el)
+    if (anchor === null) {
+        parent.appendChild(el)
+    } else {
+        parent.insertBefore(el, anchor)
+    }
 }
 
 export function createText(text: string): Text {
