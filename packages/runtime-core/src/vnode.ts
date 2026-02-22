@@ -39,7 +39,6 @@ export function createVNode(
     props?: any,
     children?: VNodeChildren
 ): VNode {
-
     let key = null
     if (props && props.key !== undefined) {
         key = props.key
