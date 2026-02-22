@@ -39,13 +39,20 @@ export function createVNode(
     props?: any,
     children?: VNodeChildren
 ): VNode {
+
+    let key = null
+    if (props && props.key !== undefined) {
+        key = props.key
+    }
+
     const vnode: VNode = {
         type,
         props,
         children: children ?? null,
         shapeFlag: getShapeFlag(type),
         el: null,
-        component: null
+        component: null,
+        key // 2. 新增：将提取出的 key 赋值给 vnode 实例
     }
 
     // 叠加状态

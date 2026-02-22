@@ -339,6 +339,11 @@ export function createRenderer<
                 i++
             }
         }
+        else { // 处理中间乱序，编号、LST、DOM
+            // 此时i指向的乱序的开始
+
+            // 1.1 构建新数组vnode -> index位置 映射表 {vnode, index} 
+        }
     }
 
     function unmountChildren(children: VNode[]) {
