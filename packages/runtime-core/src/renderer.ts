@@ -6,6 +6,7 @@ import { effect } from "@mini-vue/reactivity";
 import { initProps } from "./componentProps";
 import { initSlots } from "./componentSlots";
 import { queueJob } from "./scheduler";
+import { unwatchFile } from "node:fs";
 
 /**
  * 最基础的单位。它可以是元素（div），也可以是纯文本（"hello"）
@@ -339,10 +340,76 @@ export function createRenderer<
                 i++
             }
         }
-        else { // 处理中间乱序，编号、LST、DOM
-            // 此时i指向的乱序的开始
+        else { // 处理中间乱序, LST的前期准备、LST、移动DOM
+            // ## LST的前期准备
+            // 核心构建一个转化序列：由新数组中每一个节点对应到旧数据的（索引位置 + 1）
+            // 转化序列：表达了新数组每一个元素在旧数组的相对顺序位置
+            // [a b c d] -> [b a c d g]。转化序列：[2, 1, 3, 4, 0] // 0表示新增
+            // LST结果就是1 3 4（2 3 4也是选一个就可以）  a c d 就是最长上升序列
 
-            // 1.1 构建新数组vnode -> index位置 映射表 {vnode, index} 
+            // 1 构建新数组vnode -> index位置 映射表 {vnode, index}
+            const s1 = i
+            const s2 = i
+
+            const keyToNewIndexMap = new Map();
+            for (let i = s2; i <= e2; i++) {
+                const node = c2[i]
+                keyToNewIndexMap.set(node.key, i)
+            }
+
+            // 2 转化序列 newIndexToOldIndexMap: 存储 [新节点相对索引] -> [旧节点索引 + 1]
+            const toBePatched = e2 - s2 + 1; // 新列表元素数量
+            let patched = 0;
+            const newIndexToOldIndexMap = new Array(toBePatched).fill(0); // 默认新增
+            // 标记是否需要移动
+            let moved = false;
+            let maxNewIndexSoFar = 0; // 记录目前遍历到的最大的新索引，用来检测是否需要移动（乱序）
+
+
+            for (let i = s1; i <= e1; i++) {
+                const prevNode = c1[i];
+
+                // 优化
+                if (patched > toBePatched) { // 如果旧数组中的复用元素足够了就不需要处理了
+                    hostRemove(prevNode.el as HostElement)
+                    continue
+                }
+
+                // 找，通过key去是否可以复用
+                let newIndex
+                if (prevNode.key != null) {
+                    newIndex = keyToNewIndexMap.get(prevNode.key)
+                } else { // 如果没 key，只能尝试去一样类型的里面找
+                    for (let j = s2; j <= e2; j++) {
+                        // 同类型并且没有被选择过
+                        if (isSameVNodeType(prevNode, c2[j]) && newIndexToOldIndexMap[j - s2] === 0) {
+                            newIndex = j
+                            break
+                        }
+                    }
+                }
+
+                if (newIndex == null) { // 不存在，不能复用那直接删除
+                    hostRemove(prevNode.el as HostElement)
+                }
+                else { // 可以复用
+                    // 不要越界 ，newIndexToOldIndexMap长短就是s2
+                    newIndexToOldIndexMap[newIndex - s2] = i + 1 // + 1将0排除
+
+                    // 还需要判断到底是否需要移动的情况
+                    // 双端后：[B, C] -> [X, B, C, Y]？要移动吗？不用相对顺序正确
+                    // 只需要在B前面插入X，在最后插入Y
+                    if (newIndex >= maxNewIndexSoFar) {
+                        maxNewIndexSoFar = newIndex
+                    } else { // 如果发现后来旧数组的元素在新数组的位置比maxNewIndexSoFar小乱序了
+                        moved = true
+                    }
+
+                    // 更新复用元素
+                    patch(prevNode, c2[newIndex], container, parentComponent, null)
+                    patched++
+                }
+            }
         }
     }
 
