@@ -340,7 +340,7 @@ export function createRenderer<
                 i++
             }
         }
-        else { // 处理中间乱序, LST的前期准备、LST、移动DOM
+        else { // 处理中间乱序, LST的前期准备、LST、DOM处理
             // ## LST的前期准备
             // 核心构建一个转化序列：由新数组中每一个节点对应到旧数据的（索引位置 + 1）
             // 转化序列：表达了新数组每一个元素在旧数组的相对顺序位置
@@ -365,12 +365,11 @@ export function createRenderer<
             let moved = false;
             let maxNewIndexSoFar = 0; // 记录目前遍历到的最大的新索引，用来检测是否需要移动（乱序）
 
-
             for (let i = s1; i <= e1; i++) {
                 const prevNode = c1[i];
 
                 // 优化
-                if (patched > toBePatched) { // 如果旧数组中的复用元素足够了就不需要处理了
+                if (patched >= toBePatched) { // 如果旧数组中的复用元素足够了就不需要处理了
                     hostRemove(prevNode.el as HostElement)
                     continue
                 }
@@ -408,6 +407,43 @@ export function createRenderer<
                     // 更新复用元素
                     patch(prevNode, c2[newIndex], container, parentComponent, null)
                     patched++
+                }
+            }
+
+            // LST
+            const increasingNewIndexSequence = moved ? getSequence(newIndexToOldIndexMap) : []
+
+            // DOM处理 核心对新数组从后往前遍历
+            /**
+             * 情况A：新增节点
+             * 情况B：需要移动（复用节点）
+             *      在LST中的序列的元素不用动
+             *      不在就需要移动
+             */
+            let j = increasingNewIndexSequence.length - 1;
+
+            // 对新数组从后开始遍历 （意味这本次遍历的上一个元素顺序是正确的）
+            for (let i = toBePatched - 1; i >= 0; i--) {
+                const index = i + s2; // 正确的index
+                const cVnode = c2[index]
+
+                const anchor = index + 1 < l2 ? c2[index + 1].el : parentAnchor
+
+                // 新增节点
+                if (newIndexToOldIndexMap[i] === 0) {
+                    patch(null, cVnode, container, parentComponent, anchor)
+                }
+                // 移动节点（主要要判断一下需要移动）
+                else if (moved) {
+                    // 不在, 因为increasingNewIndexSequence也是从后遍历
+                    if (j < 0 || i != increasingNewIndexSequence[j]) {
+                        // 不用patch了，因为在准备环节已经patch过来只需要移动就可以
+                        // insertBefore 如果发现本身已经存在于当前文档的 DOM 树中
+                        // 会自动先把它从原来的位置拔出来，然后再插入到新的位置
+                        hostInsert(cVnode.el as HostNode, container, anchor)
+                    } else {
+                        j--
+                    }
                 }
             }
         }
