@@ -23,6 +23,8 @@ export class ReactiveEffect {
     deps: Set<ReactiveEffect>[] = []; //双向绑定 反向收集 deps
     active: Boolean = true //标志位
     onStop?: () => void //自定义回调
+    // 每一个ReactiveEffect都多了一个变量指向上一层嵌套的ReactiveEffect
+    parent: ReactiveEffect | undefined = undefined // 解决Effect嵌套
 
     constructor(fn: Function, public scheduler?: Function) {
         this._fn = fn
@@ -33,16 +35,18 @@ export class ReactiveEffect {
             return this._fn(); // 直接执行，不要导致设置activatEffect导致依赖收集
         }
 
-
-        //（1）effect函数 （2）依赖更新 记录当前创建的ReactiveEffect对象
-        activatEffect = this
-        //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
-        const result = this._fn()
-        //置为空 
-        // BUG
-        activatEffect = undefined
-
-        return result
+        try {
+            // 在activatEffect被当前值赋值之前，将activatEffect赋值给parent
+            // 因为activatEffect是上一层活跃的Effect或者是undefined
+            this.parent = activatEffect
+            //（1）effect函数 （2）依赖更新 记录当前创建的ReactiveEffect对象
+            activatEffect = this
+            //调用函数 - 里面如果访问了响应式对象就会导致track并收集ReactiveEffect依赖
+            return this._fn() // _fn中可能会继续嵌套effect
+        } finally {  // 通过finally去进行清理操作
+            activatEffect = this.parent
+            this.parent = undefined
+        }
     }
 
     stop() {
