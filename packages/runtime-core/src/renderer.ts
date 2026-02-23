@@ -265,7 +265,7 @@ export function createRenderer<
                 mountChildren(c2 as VNode[], container, parent)
             } else { // 旧节点是数组 新数组 vs 旧数组 diff算法
                 //  预处理 - 双端对比 (Syncing) 核心diff算法
-
+                patchKeyedChildren(c1 as VNode[], c2 as VNode[], container, parent, anchor)
             }
         }
 

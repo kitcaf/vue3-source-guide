@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import { createApp } from "../../runtime-dom/src";
 import { h } from "../src/h";
 import { ref } from "../../reactivity/src/ref";
+import { nextTick } from "../src/scheduler";
 
 describe("element props update", () => {
-    it("should update props (add, remove, change)", () => {
+    it("should update props (add, remove, change)", async () => {
         const count = ref(0);
 
         const App = {
@@ -39,6 +40,8 @@ describe("element props update", () => {
 
         // 2. 触发更新
         count.value++;
+
+        await nextTick();
 
         // 3. 验证更新
         expect(el.getAttribute("foo")).toBe("new-foo"); // 修改

@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import { createApp } from "../../runtime-dom/src";
 import { h } from "../src/h";
 import { ref } from "../../reactivity/src/ref";
+import { nextTick } from "../src/scheduler";
 
 describe("component update", () => {
-    it("should update view when data changes[when no patch methond]", () => {
+    it("should update view when data changes[when no patch methond]", async () => {
         let renderCount = 0;
         const count = ref(0);
         const App = {
@@ -26,12 +27,14 @@ describe("component update", () => {
         // 2. 修改响应式数据
         count.value++;
 
+        await nextTick();
+
         // 3. 验证 render 是否再次执行（证明 effect 追踪成功）
         expect(renderCount).toBe(2);
     });
 
     // 测试用例 2: 被动更新 - Slots 改变
-    it("should update component slots", () => {
+    it("should update component slots", async () => {
         // 子组件：渲染插槽
         const Child = {
             name: "Child",
@@ -48,10 +51,11 @@ describe("component update", () => {
         // 父组件
         const Parent = {
             name: "Parent",
-            render() {
+            render(_ctx: any) {
+                const c = count.value
                 return h(Child, {}, {
                     // 插槽内容依赖父组件数据
-                    default: () => h("p", {}, "count: " + count.value)
+                    default: () => h("p", {}, "count: " + c)
                 })
             }
         };
@@ -65,13 +69,14 @@ describe("component update", () => {
         // 2. 更新数据
         count.value = 2;
 
+        await nextTick();
         // 3. 断言插槽内容更新
         // 这验证了 updateComponentPreRender 中 initSlots 的逻辑是否正确
         expect(root.innerHTML).toBe("<div><p>count: 2</p></div>");
     });
 
     // 根节点变化 (验证 next.el 和 instance.vnode.el 的同步逻辑)
-    it("should update instance.vnode.el when component root element changes", () => {
+    it("should update instance.vnode.el when component root element changes", async () => {
         const change = ref(false);
 
         // 子组件：根据状态切换根标签 div -> p
@@ -99,6 +104,8 @@ describe("component update", () => {
         // 触发更新
         change.value = true;
 
+        await nextTick();
+
         // 此时 Child 组件内部发生 patch，oldVnode(div) 被卸载，newVnode(p) 被挂载
         // 我们需要验证视图是否正确
         expect(root.innerHTML).toBe("<p>new root</p>");
@@ -106,6 +113,9 @@ describe("component update", () => {
         // 再次触发更新，验证下一次更新是否能找到正确的锚点
         // 如果 instance.vnode.el 没有正确更新，下一次 diff 可能会报错或找不到 parentNode
         change.value = false;
+
+        await nextTick();
+
         expect(root.innerHTML).toBe("<div>old root</div>");
     });
 });

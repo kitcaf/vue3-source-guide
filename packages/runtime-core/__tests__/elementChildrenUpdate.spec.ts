@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import { createApp } from "../../runtime-dom/src";
 import { h } from "../src/h";
 import { ref } from "../../reactivity/src/ref";
+import { nextTick } from "../src/scheduler";
 
 describe("element children update", () => {
-    it("should switch between text and array children", () => {
+    it("should switch between text and array children", async () => {
         const isText = ref(true);
         const App = {
             setup() {
@@ -30,6 +31,9 @@ describe("element children update", () => {
 
         // 2. Text -> Array
         isText.value = false;
+
+        await nextTick();
+
         // 验证: 文本被清空，出现了两个子元素
         expect(el.textContent).not.toBe("text children");
         expect(el.children.length).toBe(2);
@@ -37,6 +41,8 @@ describe("element children update", () => {
 
         // 3. Array -> Text
         isText.value = true;
+
+        await nextTick();
         // 验证: 子元素被移除，变回文本
         expect(el.textContent).toBe("text children");
         expect(el.children.length).toBe(0);
