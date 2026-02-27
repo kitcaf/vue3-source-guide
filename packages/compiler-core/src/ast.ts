@@ -31,5 +31,6 @@ export interface ElementNode {
     tag: string
     tagType: ElementTypes
     children: ASTNode[]
+    isSelfClosing?: boolean
 }
 

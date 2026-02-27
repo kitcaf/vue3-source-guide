@@ -1,5 +1,9 @@
-import { InterpolationNode, NodeTypes } from "./ast"
+import { ElementNode, ElementTypes, InterpolationNode, NodeTypes } from "./ast"
 
+const enum TagType {
+    Start, // 开始标签
+    End //结束标签
+}
 
 // 定义解析上下文的接口
 export interface ParserContext {
@@ -82,3 +86,72 @@ export function parseInterpolation(context: ParserContext): InterpolationNode {
         }
     }
 }
+
+/**
+ * 解析单个标签（开始标签或结束标签）
+ * @param context context 解析器上下文
+ * @param type type 当前要解析的是开始还是结束标签
+ */
+function parseTag(context: ParserContext, type: TagType)
+    : ElementNode // 自闭和标签需要返回给调用者不需要回调它的子类了
+    | undefined {
+    // 1. 编写正则匹配标签名
+    // 如果是开始标签，匹配 /^<([a-z][^\t\r\n\f />]*)/i  (例如: "<div")
+    // 如果是结束标签，匹配 /^<\/([a-z][^\t\r\n\f />]*)/i (例如: "</div")
+    const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source);
+
+    if (!match) return undefined
+
+    // 提取标签名 正则的捕获组div
+    const tag = match[1];
+
+    // 吃掉匹配到的部分，例如 "<div" match[0]是整个捕获的字符串
+    advanceBy(context, match[0].length)
+
+    // 吃标签闭合的 ">" 或者 "/>"（自闭合标签）
+    const isSelfClosing = context.source.startsWith("/>")
+    advanceBy(context, isSelfClosing ? 2 : 1)
+
+    if (type === TagType.End) {
+        return undefined
+    }
+
+    return {
+        type: NodeTypes.ELEMENT,
+        tag: tag,
+        tagType: ElementTypes.ELEMENT, // 这里先默认都是原生元素
+        children: [],
+        isSelfClosing: isSelfClosing // 是否是自闭合
+    }
+}
+
+/**
+ * 解析完整的 Element 节点
+ * @param context 
+ */
+export function parseElement(context: ParserContext): ElementNode {
+    // 解析开始标签
+    // 此时 context.source 比如是 "<div>hello</div>"
+    // 执行后，element 拿到 AST 节点，context.source 变成 "hello</div>"
+    const element = parseTag(context, TagType.Start);
+
+    if (!element) {
+        throw new Error('Failed to parse start tag.');
+    }
+
+    // 处理子元素 【占位符 - parseChildren、后续章节实现其实就是while循环-去继续递归子元素】
+    if (!element.isSelfClosing) {
+
+        element.children = parseChildren(context);
+
+        // 校验结束标签是否与开始标签匹配
+        if (context.source.startsWith(`</${element.tag}>`)) {
+            parseTag(context, TagType.End);
+        } else {
+            throw new Error(`缺少结束标签: </${element.tag}>`);
+        }
+    }
+    return element
+}
+
+export function parseChildren(context: ParserContext): ElementNode[] { return [] }
