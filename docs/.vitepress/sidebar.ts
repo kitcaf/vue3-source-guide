@@ -216,15 +216,55 @@ export const sidebar: DefaultTheme.SidebarItem[] = [
         "collapsed": false
       },
       {
-        "text": "3.4 更新流程",
+        "text": "3.4 更新流程-常规更新",
         "items": [
           {
             "text": "3.4.1 runtime-core 更新的核心流程",
-            "link": "/docs/三、运行时/3.4 更新流程/3.4.1 runtime-core 更新的核心流程"
+            "link": "/docs/三、运行时/3.4 更新流程-常规更新/3.4.1 runtime-core 更新的核心流程"
           },
           {
             "text": "3.4.2 重构setupRenderEffect",
-            "link": "/docs/三、运行时/3.4 更新流程/3.4.2 重构setupRenderEffect"
+            "link": "/docs/三、运行时/3.4 更新流程-常规更新/3.4.2 重构setupRenderEffect"
+          },
+          {
+            "text": "3.4.4 更新**Text节点**",
+            "link": "/docs/三、运行时/3.4 更新流程-常规更新/3.4.4 更新Text节点"
+          },
+          {
+            "text": "3.4.5 更新 element 流程搭建",
+            "link": "/docs/三、运行时/3.4 更新流程-常规更新/3.4.5 更新 element 流程搭建"
+          },
+          {
+            "text": "3.4.4 更新 element 的 props",
+            "link": "/docs/三、运行时/3.4 更新流程-常规更新/3.4.6 更新 element 的 props"
+          },
+          {
+            "text": "3.4.7 3.4.7 更新 element 的 children",
+            "link": "/docs/三、运行时/3.4 更新流程-常规更新/3.4.7 3.4.7 更新 element 的 children"
+          },
+          {
+            "text": "3.4.10 实现 nextTick 功能",
+            "link": "/docs/三、运行时/3.4 更新流程-常规更新/3.4.10 实现 nextTick 功能"
+          },
+          {
+            "text": "3.4.11 **实现 Scheduler (调度器) 系统**",
+            "link": "/docs/三、运行时/3.4 更新流程-常规更新/3.4.11 实现 Scheduler (调度器) 系统"
+          }
+        ],
+        "collapsed": false
+      }
+    ],
+    "collapsed": false
+  },
+  {
+    "text": "四、编译器",
+    "items": [
+      {
+        "text": "4.1 概述",
+        "items": [
+          {
+            "text": "编译器导读",
+            "link": "/docs/四、编译器/4.1 概述/编译器导读 & 流程概览"
           }
         ],
         "collapsed": false

@@ -68,12 +68,21 @@
     - [3.3.5 实现 getCurrentInstance](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.5%20%E5%AE%9E%E7%8E%B0%20getCurrentInstance.md)
     - [3.3.6 实现依赖注入功能 provide/inject](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.6%20%E5%AE%9E%E7%8E%B0%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E5%8A%9F%E8%83%BDinject%20&%20provide.md)
     - [3.3.7 实现 Lifecycle Hooks](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.3%20%E7%BB%84%E4%BB%B6%E5%AE%9E%E4%BE%8B%E4%B8%8E%E5%8A%9F%E8%83%BD/3.3.7%20%E5%AE%9E%E7%8E%B0%20Lifecycle%20Hooks.md)
-  - 3.4 更新流程
-    - [3.4.1 runtime-core 更新的核心流程](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B/3.4.1%20runtime-core%20%E6%9B%B4%E6%96%B0%E7%9A%84%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B.md)
-    - [3.4.2 重构setupRenderEffect](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B/3.4.2%20%E9%87%8D%E6%9E%84setupRenderEffect.md)
+  - 3.4 更新流程-常规更新
+    - [3.4.1 runtime-core 更新的核心流程](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B-%E5%B8%B8%E8%A7%84%E6%9B%B4%E6%96%B0/3.4.1%20runtime-core%20%E6%9B%B4%E6%96%B0%E7%9A%84%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B.md)
+    - [3.4.2 重构setupRenderEffect](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B-%E5%B8%B8%E8%A7%84%E6%9B%B4%E6%96%B0/3.4.2%20%E9%87%8D%E6%9E%84setupRenderEffect.md)
+    - [3.4.4 更新**Text节点**](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B-%E5%B8%B8%E8%A7%84%E6%9B%B4%E6%96%B0/3.4.4%20%E6%9B%B4%E6%96%B0Text%E8%8A%82%E7%82%B9.md)
+    - [3.4.5 更新 element 流程搭建](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B-%E5%B8%B8%E8%A7%84%E6%9B%B4%E6%96%B0/3.4.5%20%E6%9B%B4%E6%96%B0%20element%20%E6%B5%81%E7%A8%8B%E6%90%AD%E5%BB%BA.md)
+    - [3.4.4 更新 element 的 props](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B-%E5%B8%B8%E8%A7%84%E6%9B%B4%E6%96%B0/3.4.6%20%E6%9B%B4%E6%96%B0%20element%20%E7%9A%84%20props.md)
+    - [3.4.7 3.4.7 更新 element 的 children](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B-%E5%B8%B8%E8%A7%84%E6%9B%B4%E6%96%B0/3.4.7%203.4.7%20%E6%9B%B4%E6%96%B0%20element%20%E7%9A%84%20children.md)
+    - [3.4.10 实现 nextTick 功能](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B-%E5%B8%B8%E8%A7%84%E6%9B%B4%E6%96%B0/3.4.10%20%E5%AE%9E%E7%8E%B0%20nextTick%20%E5%8A%9F%E8%83%BD.md)
+    - [3.4.11 **实现 Scheduler (调度器) 系统**](docs/%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6/3.4%20%E6%9B%B4%E6%96%B0%E6%B5%81%E7%A8%8B-%E5%B8%B8%E8%A7%84%E6%9B%B4%E6%96%B0/3.4.11%20%E5%AE%9E%E7%8E%B0%20Scheduler%20(%E8%B0%83%E5%BA%A6%E5%99%A8)%20%E7%B3%BB%E7%BB%9F.md)
+- 四、编译器
+  - 4.1 概述
+    - [编译器导读](docs/%E5%9B%9B%E3%80%81%E7%BC%96%E8%AF%91%E5%99%A8/4.1%20%E6%A6%82%E8%BF%B0/%E7%BC%96%E8%AF%91%E5%99%A8%E5%AF%BC%E8%AF%BB%20&%20%E6%B5%81%E7%A8%8B%E6%A6%82%E8%A7%88.md)
 - [index](docs/index.md)
 
-<!--tocEnd:offset=53-->
+<!--tocEnd:offset=62-->
 
 
 ## 致谢 | Acknowledgements
