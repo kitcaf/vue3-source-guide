@@ -1,4 +1,4 @@
-import { ElementNode, ElementTypes, InterpolationNode, NodeTypes } from "./ast"
+import { ElementNode, ElementTypes, InterpolationNode, NodeTypes, TextNode } from "./ast"
 
 const enum TagType {
     Start, // 开始标签
@@ -152,6 +152,35 @@ export function parseElement(context: ParserContext): ElementNode {
         }
     }
     return element
+}
+
+/**
+ * 解析文本节点
+ * @param context 
+ */
+export function parseText(context: ParserContext): TextNode {
+    // 默认endIndex的位置为最大，所有的长度
+    let endIndex = context.source.length
+    const endTokens = ["<", "{{"]
+
+    // 从这两种endTokens中找一个最近的位置
+    for (let i = 0; i < endTokens.length; i++) {
+        const index = context.source.indexOf(endTokens[i])
+        // 更新endIndex, 注意indexOf没有找到返回-1
+        if (index !== -1 && index < endIndex) {
+            endIndex = index
+        }
+    }
+    // 进行切分文本部分
+    const content = context.source.slice(0, endIndex)
+
+    // 吃掉字符串部分
+    advanceBy(context, content.length);
+
+    return {
+        type: NodeTypes.TEXT,
+        content: content
+    }
 }
 
 export function parseChildren(context: ParserContext): ElementNode[] { return [] }

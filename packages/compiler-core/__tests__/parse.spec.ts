@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { NodeTypes, ElementTypes } from '../src/ast';
-import { createParserContext, parseInterpolation } from '../src/parse';
+import { createParserContext, parseInterpolation, parseText } from '../src/parse';
 
 describe('compiler: parse', () => {
 
@@ -42,4 +42,53 @@ describe('compiler: parse', () => {
             expect(context.source).toBe('');
         });
     })
+
+    describe('parseText', () => {
+
+        it('should parse pure text', () => {
+            // 1. 准备一段纯文本（没有标签和插值）
+            const context = createParserContext('some simple text');
+
+            const astNode = parseText(context);
+
+            // 2. 断言生成的 AST 节点
+            expect(astNode).toStrictEqual({
+                type: NodeTypes.TEXT,
+                content: 'some simple text',
+            });
+
+            // 3. 断言文本已被完全消费
+            expect(context.source).toBe('');
+        });
+
+        it('should stop parsing at element tag "<"', () => {
+            // 1. 文本后面跟着一个标签
+            const context = createParserContext('hello<div></div>');
+
+            const astNode = parseText(context);
+
+            expect(astNode).toStrictEqual({
+                type: NodeTypes.TEXT,
+                content: 'hello',
+            });
+
+            // 2. 断言游标准确停在了 "<" 之前
+            expect(context.source).toBe('<div></div>');
+        });
+
+        it('should stop parsing at interpolation "{{"', () => {
+            // 1. 文本后面跟着一个插值
+            const context = createParserContext('hello {{ message }}');
+
+            const astNode = parseText(context);
+
+            expect(astNode).toStrictEqual({
+                type: NodeTypes.TEXT,
+                content: 'hello ', // 注意：这里的空格属于文本的一部分，要保留
+            });
+
+            // 2. 断言游标准确停在了 "{{" 之前
+            expect(context.source).toBe('{{ message }}');
+        });
+    });
 });
