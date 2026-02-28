@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { NodeTypes, ElementTypes } from '../src/ast';
-import { createParserContext, parseInterpolation, parseText } from '../src/parse';
+import { createParserContext, parseChildren, parseInterpolation, parseText } from '../src/parse';
 
 describe('compiler: parse', () => {
 
@@ -90,5 +90,44 @@ describe('compiler: parse', () => {
             // 2. 断言游标准确停在了 "{{" 之前
             expect(context.source).toBe('{{ message }}');
         });
+    });
+
+    describe('parseChildren (联合解析)', () => {
+        it('should parse mixed content correctly', () => {
+            // 1. 准备一段混合了文本、插值、和嵌套元素的模板
+            const content = '<div>hi, {{ message }}</div>';
+            const context = createParserContext(content);
+
+            // 2. 调用主循环（作为根节点，传入空的 ancestors 栈）
+            // 注意：真实源码中这里会有个 parse 函数做统一包裹，我们直接调 parseChildren
+            const astNodes = parseChildren(context, []);
+
+            // 3. 断言生成的 AST 树结构
+            expect(astNodes).toStrictEqual([
+                {
+                    type: NodeTypes.ELEMENT,
+                    tag: 'div',
+                    tagType: ElementTypes.ELEMENT,
+                    isSelfClosing: false,
+                    children: [ // div 内部的 parseChildren 递归结果
+                        {
+                            type: NodeTypes.TEXT,
+                            content: 'hi, ',
+                        },
+                        {
+                            type: NodeTypes.INTERPOLATION,
+                            content: {
+                                type: NodeTypes.SIMPLE_EXPRESSION,
+                                content: 'message',
+                            },
+                        }
+                    ],
+                }
+            ]);
+
+            // 4. 断言全文被彻底消费
+            expect(context.source).toBe('');
+        });
+
     });
 });

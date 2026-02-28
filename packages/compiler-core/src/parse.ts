@@ -1,4 +1,4 @@
-import { ElementNode, ElementTypes, InterpolationNode, NodeTypes, TextNode } from "./ast"
+import { ASTNode, ElementNode, ElementTypes, InterpolationNode, NodeTypes, TextNode } from "./ast"
 
 const enum TagType {
     Start, // 开始标签
@@ -129,7 +129,7 @@ function parseTag(context: ParserContext, type: TagType)
  * 解析完整的 Element 节点
  * @param context 
  */
-export function parseElement(context: ParserContext): ElementNode {
+export function parseElement(context: ParserContext, ancestors: string[]): ElementNode {
     // 解析开始标签
     // 此时 context.source 比如是 "<div>hello</div>"
     // 执行后，element 拿到 AST 节点，context.source 变成 "hello</div>"
@@ -141,8 +141,10 @@ export function parseElement(context: ParserContext): ElementNode {
 
     // 处理子元素 【占位符 - parseChildren、后续章节实现其实就是while循环-去继续递归子元素】
     if (!element.isSelfClosing) {
-
-        element.children = parseChildren(context);
+        // 递归本节点的所有子元素
+        ancestors.push(element.tag) // 将本元素的标签放入ancestors
+        element.children = parseChildren(context, ancestors);
+        ancestors.pop() // 恢复现场
 
         // 校验结束标签是否与开始标签匹配
         if (context.source.startsWith(`</${element.tag}>`)) {
@@ -183,4 +185,57 @@ export function parseText(context: ParserContext): TextNode {
     }
 }
 
-export function parseChildren(context: ParserContext): ElementNode[] { return [] }
+/**
+ * 返回当前层的Children节点
+ * 结束条件：字符串空了或者栈匹配到了当前层的元素
+ * @param context
+ * @param ancestors 
+ */
+export function parseChildren(context: ParserContext, ancestors: string[]): ElementNode[] {
+    const node: ASTNode[] = []
+
+    // 遍历它的所有子节点
+    while (!isEnd(context, ancestors)) {
+        // ELement子节点 - 内层会继续递归它的子节点（这里判断全一点必须<+字母）
+        if (context.source[0] === "<" && /[a-z]/i.test(context.source[1])) {
+            /**
+             * 第一次调用也就是isEnd（字符串）开启一个循环
+             * 后面的parseChildren一定是parseElement引起的，
+             * 而要获取本层的节点标签一定是parseElement，因此ancestors在parseElement里面进行处理
+             */
+            node.push(parseElement(context, ancestors))
+        }
+        // {{}} 解析插值叶子节点
+        else if (context.source.startsWith("{{")) {
+            node.push(parseInterpolation(context))
+        }
+        // 文本叶子节点
+        else {
+            node.push(parseText(context))
+        }
+    }
+    return node
+}
+
+/**
+ * 判断子节点是否为空
+ * 第一次：parseChildren是判断context字符串不为空
+ * 后面：通过栈来判断，</, 遇到进行判断是否是栈顶元素如果是，那么表示结束了
+ * @param context 
+ * @param ancestors 
+ */
+function isEnd(context: ParserContext, ancestors: string[]): boolean {
+    const s = context.source;
+    if (s.startsWith("</")) {
+        // 从栈顶向下寻找，看看有没有匹配的祖先标签
+        // 这样做是为了容错：如果用户写了 <div><span></div> (漏了 </span>)
+        // 状态机会直接向上查找到 div，从而强行结束 span 的解析，避免死循环
+        for (let i = ancestors.length - 1; i >= 0; i--) {
+            if (s.startsWith(`</${ancestors[i]}>`)) {
+                return true
+            }
+        }
+    }
+    // 如果字符串被消费光了，也结束
+    return !s
+}
