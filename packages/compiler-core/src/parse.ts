@@ -1,4 +1,4 @@
-import { ASTNode, ElementNode, ElementTypes, InterpolationNode, NodeTypes, TextNode } from "./ast"
+import { ASTNode, ElementNode, ElementTypes, InterpolationNode, NodeTypes, RootNode, TextNode } from "./ast"
 
 const enum TagType {
     Start, // 开始标签
@@ -239,3 +239,31 @@ function isEnd(context: ParserContext, ancestors: string[]): boolean {
     // 如果字符串被消费光了，也结束
     return !s
 }
+
+/**
+ * 包装生成 Root 节点
+ * @param children 子节点数组
+ */
+function createRoot(children: ASTNode[]): RootNode {
+    return {
+        type: NodeTypes.ROOT,
+        children: children
+    }
+}
+
+/**
+ * 【最终入口】解析模板字符串，生成 AST 树
+ * @param content 原始模板字符串
+ * @returns 完整的 AST 根节点
+ */
+export function baseParse(content: string): RootNode {
+    // 创建全局唯一的解析上下文
+    const context = createParserContext(content)
+
+    // 将整个模板作为一个整体，调用 parseChildren 进行联合解析
+    // 最外层解析时，ancestors 祖先栈肯定是空的 []，此时的判断一定是字符串是否为空
+    const children = parseChildren(context, []);
+    return createRoot(children)
+}
+
+

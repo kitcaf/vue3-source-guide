@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { NodeTypes, ElementTypes } from '../src/ast';
-import { createParserContext, parseChildren, parseInterpolation, parseText } from '../src/parse';
+import { baseParse, createParserContext, parseChildren, parseInterpolation, parseText } from '../src/parse';
 
 describe('compiler: parse', () => {
 
@@ -129,5 +129,49 @@ describe('compiler: parse', () => {
             expect(context.source).toBe('');
         });
 
+    });
+
+    describe('compiler: parse 最终入口', () => {
+        it('should parse a complete template', () => {
+            // 假设这是我们传入 Vue 模板的内容
+            const template = `<div><p>hi, {{ msg }}</p></div>`;
+
+            // 直接调用 baseParse
+            const ast = baseParse(template);
+
+            // 断言这棵树的终极形态！
+            expect(ast).toStrictEqual({
+                type: NodeTypes.ROOT, // 外层是 RootNode
+                children: [
+                    {
+                        type: NodeTypes.ELEMENT,
+                        tag: 'div',
+                        tagType: ElementTypes.ELEMENT,
+                        isSelfClosing: false,
+                        children: [
+                            {
+                                type: NodeTypes.ELEMENT,
+                                tag: 'p',
+                                tagType: ElementTypes.ELEMENT,
+                                isSelfClosing: false,
+                                children: [
+                                    {
+                                        type: NodeTypes.TEXT,
+                                        content: 'hi, '
+                                    },
+                                    {
+                                        type: NodeTypes.INTERPOLATION,
+                                        content: {
+                                            type: NodeTypes.SIMPLE_EXPRESSION,
+                                            content: 'msg'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            });
+        });
     });
 });

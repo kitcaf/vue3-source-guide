@@ -4,7 +4,8 @@ export const enum NodeTypes {
     INTERPOLATION,  // 插值节点 {{ }}
     SIMPLE_EXPRESSION, // 简单表达式节点（属于插值节点的子类型 - content里面的type子类型）
     ELEMENT, // 新增：元素节点类型
-    TEXT // 纯文本节点
+    TEXT, // 纯文本节点
+    ROOT
 }
 
 // 简单表达式节点的类型接口
@@ -38,5 +39,10 @@ export interface ElementNode {
 export interface TextNode {
     type: NodeTypes.TEXT
     content: string;
+}
+
+export interface RootNode {
+    type: NodeTypes.ROOT;
+    children: ASTNode[];
 }
 
