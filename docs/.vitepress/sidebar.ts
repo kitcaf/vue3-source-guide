@@ -268,6 +268,32 @@ export const sidebar: DefaultTheme.SidebarItem[] = [
           }
         ],
         "collapsed": false
+      },
+      {
+        "text": "4.2 解析",
+        "items": [
+          {
+            "text": "实现解析插值",
+            "link": "/docs/四、编译器/4.2 解析/4.2.1 实现解析插值"
+          },
+          {
+            "text": "实现解析 Element 节点",
+            "link": "/docs/四、编译器/4.2 解析/4.2.2 实现解析 Element 节点"
+          },
+          {
+            "text": "实现解析 Text 节点 (Parse Text)",
+            "link": "/docs/四、编译器/4.2 解析/4.2.3 实现解析 Text 节点"
+          },
+          {
+            "text": "联合解析与有限状态机",
+            "link": "/docs/四、编译器/4.2 解析/4.2.4 联合解析与有限状态机"
+          },
+          {
+            "text": "总入口`baseParse`",
+            "link": "/docs/四、编译器/4.2 解析/4.2.5 总入口"
+          }
+        ],
+        "collapsed": false
       }
     ],
     "collapsed": false
