@@ -1,4 +1,14 @@
-import { ASTNode, ElementNode, ElementTypes, InterpolationNode, NodeTypes, RootNode, TextNode } from "./ast"
+import {
+    ASTNode,
+    AttributeNode,
+    ElementNode,
+    ElementTypes,
+    InterpolationNode,
+    NodeTypes,
+    RootNode,
+    TextNode
+} from "./ast"
+import { advanceSpaces } from "./utils"
 
 const enum TagType {
     Start, // 开始标签
@@ -32,7 +42,7 @@ export function createParserContext(content: string): ParserContext {
  * @param context 
  * @param length 
  */
-function advanceBy(context: ParserContext, length: number): void {
+export function advanceBy(context: ParserContext, length: number): void {
     context.source = context.source.slice(length)
 }
 
@@ -88,6 +98,82 @@ export function parseInterpolation(context: ParserContext): InterpolationNode {
 }
 
 /**
+ * 解析单个属性，比如 id="app"
+ * @param context 
+ */
+function parseAttribute(context: ParserContext): AttributeNode {
+    // 匹配属性名
+    const match = /^[^\t\r\n\f />][^\t\r\n\f />=]*/.exec(context.source)!;
+    if (!match) {
+        throw new Error(`解析属性失败，遇到意外的字符: ${context.source[0]}`);
+    }
+    const name = match[0];
+    advanceBy(context, name.length);
+
+    // 匹配属性值
+    // 解析属性值 (有可能没有值，比如 <input disabled>)
+    let value: any = undefined;
+
+    // 如果后面紧跟=，说明是有属性值的
+    if (/^[\t\r\n\f ]*=/.test(context.source)) {
+        //吃掉空格
+        advanceSpaces(context);
+        // 吃掉=号
+        advanceBy(context, 1);
+        // 吃掉=号后面的空格
+        advanceSpaces(context);
+
+        // 属性值是""/''。包裹
+
+        // 获取当前引号类型（是单引号还是双引号）
+        const quote = context.source[0]
+        const isQuote = quote === `"` || quote === `'`;
+
+        if (isQuote) {
+            // 消费引号
+            advanceBy(context, 1);
+            // 找到结束引号位置
+            let endQuoteIndex = context.source.indexOf(quote)
+            if (endQuoteIndex > -1) {
+                const valueContent = context.source.slice(0, endQuoteIndex);
+                value = {
+                    type: NodeTypes.TEXT,
+                    content: valueContent
+                };
+                advanceBy(context, valueContent.length + 1);
+            }
+        }
+    }
+    return {
+        type: NodeTypes.ATTRIBUTE,
+        name: name,
+        value
+    }
+}
+
+/**
+ * 遍历标签中的所有属性
+ * @param context 
+ */
+function parseAttributes(context: ParserContext): AttributeNode[] {
+    const props: AttributeNode[] = []
+
+    while (context.source.length > 0 &&
+        !context.source.startsWith(">") &&
+        !context.source.startsWith("/>")) {
+        // 先消费空格
+        advanceSpaces(context)
+        // 获取一个属性
+        const prop = parseAttribute(context)
+        // 加入数组
+        props.push(prop)
+        // 消费下一个属性之前的空格
+        advanceSpaces(context)
+    }
+    return props
+}
+
+/**
  * 解析单个标签（开始标签或结束标签）
  * @param context context 解析器上下文
  * @param type type 当前要解析的是开始还是结束标签
@@ -96,17 +182,20 @@ function parseTag(context: ParserContext, type: TagType)
     : ElementNode // 自闭和标签需要返回给调用者不需要回调它的子类了
     | undefined {
     // 1. 编写正则匹配标签名
-    // 如果是开始标签，匹配 /^<([a-z][^\t\r\n\f />]*)/i  (例如: "<div")
-    // 如果是结束标签，匹配 /^<\/([a-z][^\t\r\n\f />]*)/i (例如: "</div")
+    // 如果是开始标签，匹配 /^<([a-z][^\t\r\n\f />]*)/i  (例如: "<div id="app">")
+    // 如果是结束标签，匹配 /^<\/([a-z][^\t\r\n\f />]*)/i (例如: "</div>")
+    // <div id="app"> match[1]=div  match[0]=<div
     const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source);
-
     if (!match) return undefined
-
-    // 提取标签名 正则的捕获组div
     const tag = match[1];
-
-    // 吃掉匹配到的部分，例如 "<div" match[0]是整个捕获的字符串
     advanceBy(context, match[0].length)
+
+    // 消费属性 id="app">、
+    advanceSpaces(context)
+    let props: AttributeNode[] = [];
+    if (type === TagType.Start) {
+        props = parseAttributes(context)
+    }
 
     // 吃标签闭合的 ">" 或者 "/>"（自闭合标签）
     const isSelfClosing = context.source.startsWith("/>")
@@ -121,6 +210,7 @@ function parseTag(context: ParserContext, type: TagType)
         tag: tag,
         tagType: ElementTypes.ELEMENT, // 这里先默认都是原生元素
         children: [],
+        props: props,
         isSelfClosing: isSelfClosing // 是否是自闭合
     }
 }

@@ -5,7 +5,8 @@ export const enum NodeTypes {
     SIMPLE_EXPRESSION, // 简单表达式节点（属于插值节点的子类型 - content里面的type子类型）
     ELEMENT, // 新增：元素节点类型
     TEXT, // 纯文本节点
-    ROOT
+    ROOT,
+    ATTRIBUTE // 【新增】 属性节点
 }
 
 // 简单表达式节点的类型接口
@@ -28,10 +29,19 @@ export const enum ElementTypes {
 
 export type ASTNode = ElementNode | any /* 暂用占位，代表其他类型节点 */;
 
+// 属性节点
+export interface AttributeNode {
+    type: NodeTypes.ATTRIBUTE;
+    name: string; // 属性名，比如 "id"
+    value: TextNode | undefined; // 属性值，比如 "app"。也可能没有值（如 disabled）
+}
+
+// 元素节点
 export interface ElementNode {
     type: NodeTypes.ELEMENT
     tag: string
     tagType: ElementTypes
+    props: AttributeNode[],
     children: ASTNode[]
     isSelfClosing?: boolean
 }

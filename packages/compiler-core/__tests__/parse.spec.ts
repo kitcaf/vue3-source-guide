@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { NodeTypes, ElementTypes } from '../src/ast';
-import { baseParse, createParserContext, parseChildren, parseInterpolation, parseText } from '../src/parse';
+import { baseParse, createParserContext, parseChildren, parseElement, parseInterpolation, parseText } from '../src/parse';
 
 describe('compiler: parse', () => {
 
@@ -109,6 +109,7 @@ describe('compiler: parse', () => {
                     tag: 'div',
                     tagType: ElementTypes.ELEMENT,
                     isSelfClosing: false,
+                    props: [],
                     children: [ // div 内部的 parseChildren 递归结果
                         {
                             type: NodeTypes.TEXT,
@@ -148,12 +149,14 @@ describe('compiler: parse', () => {
                         tag: 'div',
                         tagType: ElementTypes.ELEMENT,
                         isSelfClosing: false,
+                        props: [],
                         children: [
                             {
                                 type: NodeTypes.ELEMENT,
                                 tag: 'p',
                                 tagType: ElementTypes.ELEMENT,
                                 isSelfClosing: false,
+                                props: [],
                                 children: [
                                     {
                                         type: NodeTypes.TEXT,
@@ -174,4 +177,80 @@ describe('compiler: parse', () => {
             });
         });
     });
+
+    describe('parse Attributes', () => {
+        it('Ordinary attributes with double quotes should be parsed', () => {
+            const context = createParserContext('<div id="app"></div>');
+            const astNode = parseElement(context, []);
+
+            expect(astNode).toStrictEqual({
+                type: NodeTypes.ELEMENT,
+                tag: 'div',
+                tagType: ElementTypes.ELEMENT,
+                isSelfClosing: false,
+                children: [],
+                props: [
+                    {
+                        type: NodeTypes.ATTRIBUTE,
+                        name: 'id',
+                        value: {
+                            type: NodeTypes.TEXT,
+                            content: 'app',
+                        },
+                    },
+                ],
+            });
+        });
+
+        it('Attributes with single quotes should be parsed', () => {
+            const context = createParserContext("<div id='app'></div>");
+            const astNode = parseElement(context, []);
+
+            expect(astNode.props[0]).toStrictEqual({
+                type: NodeTypes.ATTRIBUTE,
+                name: 'id',
+                value: {
+                    type: NodeTypes.TEXT,
+                    content: 'app',
+                },
+            });
+        });
+
+        it('Attributes without values should be parsed', () => {
+            const context = createParserContext('<input disabled />');
+            const astNode = parseElement(context, []);
+
+            expect(astNode.props[0]).toStrictEqual({
+                type: NodeTypes.ATTRIBUTE,
+                name: 'disabled',
+                value: undefined, // 无值属性的 value 应该是 undefined
+            });
+            // 顺便断言自闭合标签解析是否正常
+            expect(astNode.isSelfClosing).toBe(true);
+        });
+
+        it('Multiple mixed attributes should be parsed', () => {
+            // 包含：无值属性、双引号属性、单引号属性
+            const context = createParserContext('<div disabled id="app" class=\'box\'></div>');
+            const astNode = parseElement(context, []);
+
+            expect(astNode.props).toStrictEqual([
+                {
+                    type: NodeTypes.ATTRIBUTE,
+                    name: 'disabled',
+                    value: undefined,
+                },
+                {
+                    type: NodeTypes.ATTRIBUTE,
+                    name: 'id',
+                    value: { type: NodeTypes.TEXT, content: 'app' },
+                },
+                {
+                    type: NodeTypes.ATTRIBUTE,
+                    name: 'class',
+                    value: { type: NodeTypes.TEXT, content: 'box' },
+                },
+            ]);
+        });
+    })
 });
