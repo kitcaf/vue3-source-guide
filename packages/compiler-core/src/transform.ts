@@ -7,13 +7,16 @@ import { ASTNode, ElementNode, NodeTypes, RootNode, TransformContext, TransformO
  */
 export function traverseNode(node: ASTNode, context: TransformContext) {
     context.currentNode = node
+    // 当前节点的Exit巡检员列表
+    const exitFns: any[] = [];
 
     // 新增：执行插件
     const nodeTransforms = context.nodeTransforms
     if (nodeTransforms) {
         for (let i = 0; i < nodeTransforms.length; i++) {
             const transformPlugin = nodeTransforms[i];
-            transformPlugin(node, context)
+            const exitFn = transformPlugin(node, context)
+            if (exitFn) exitFns.push(exitFn)
         }
     }
 
@@ -28,6 +31,13 @@ export function traverseNode(node: ASTNode, context: TransformContext) {
         case NodeTypes.SIMPLE_EXPRESSION:
         case NodeTypes.TEXT:
             break;
+    }
+
+    // ================== Exit 阶段 ==================
+    // 【关键】：必须反向执行（Reverse）！这是洋葱模型的特性（先进后出）
+    let i = exitFns.length - 1
+    while (i--) {
+        exitFns[i]()
     }
 }
 

@@ -63,7 +63,7 @@ export interface RootNode {
 }
 
 // 定义插件函数的类型
-export type NodeTransform = (node: ASTNode, context: TransformContext) => void;
+export type NodeTransform = (node: ASTNode, context: TransformContext) => void | (() => void);
 
 // 定义 Transform 的配置项接口
 export interface TransformOptions {
