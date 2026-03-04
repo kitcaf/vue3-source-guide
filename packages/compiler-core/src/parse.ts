@@ -281,7 +281,7 @@ export function parseText(context: ParserContext): TextNode {
  * @param context
  * @param ancestors 
  */
-export function parseChildren(context: ParserContext, ancestors: string[]): ElementNode[] {
+export function parseChildren(context: ParserContext, ancestors: string[]): ASTNode[] {
     const node: ASTNode[] = []
 
     // 遍历它的所有子节点

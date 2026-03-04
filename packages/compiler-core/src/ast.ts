@@ -1,4 +1,5 @@
 
+// ############### 编译阶段类型 ########################
 // 定义所有可能出现的 AST 节点类型枚举
 export const enum NodeTypes {
     INTERPOLATION,  // 插值节点 {{ }}
@@ -27,7 +28,12 @@ export const enum ElementTypes {
     COMPONENT, // Vue 组件（后续扩展用）
 }
 
-export type ASTNode = ElementNode | any /* 暂用占位，代表其他类型节点 */;
+export type ASTNode =
+    ElementNode
+    | TextNode
+    | RootNode
+    | SimpleExpressionNode
+    | InterpolationNode
 
 // 属性节点
 export interface AttributeNode {
@@ -55,4 +61,27 @@ export interface RootNode {
     type: NodeTypes.ROOT;
     children: ASTNode[];
 }
+
+// 定义插件函数的类型
+export type NodeTransform = (node: ASTNode, context: TransformContext) => void;
+
+// 定义 Transform 的配置项接口
+export interface TransformOptions {
+    nodeTransforms: NodeTransform[]
+}
+
+// ################# Transform 阶段 类型 #######################
+// 定义 Transform 上下文接口 其实它就是一个传递函数的对象options
+// 改进继承一个参数
+export interface TransformContext extends TransformOptions {
+    root: RootNode;         // 记录 AST 根节点
+    currentNode: ASTNode | null; // 记录当前正在遍历的节点
+    parent: ASTNode | null; // 记录当前节点的父节点
+    childIndex: number // 记录当前节点在父节点 children 数组中的索引
+}
+
+
+
+
+
 
