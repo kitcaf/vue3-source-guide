@@ -15,6 +15,8 @@ export function traverseNode(node: ASTNode, context: TransformContext) {
     if (nodeTransforms) {
         for (let i = 0; i < nodeTransforms.length; i++) {
             const transformPlugin = nodeTransforms[i];
+
+            
             const exitFn = transformPlugin(node, context)
             if (exitFn) exitFns.push(exitFn)
         }
