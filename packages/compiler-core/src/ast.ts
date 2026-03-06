@@ -7,13 +7,14 @@ export const enum NodeTypes {
     ELEMENT, // 新增：元素节点类型
     TEXT, // 纯文本节点
     ROOT,
-    ATTRIBUTE // 【新增】 属性节点
+    ATTRIBUTE, // 【新增】 属性节点
+    COMPOUND_EXPRESSION // 复合表达式节点
 }
 
 // 简单表达式节点的类型接口
 export interface SimpleExpressionNode {
     type: NodeTypes.SIMPLE_EXPRESSION
-    content: string // 例如 "message"
+    content: string // 例如 "{{message}}"
 }
 
 // 插值节点的类型接口
@@ -34,6 +35,7 @@ export type ASTNode =
     | RootNode
     | SimpleExpressionNode
     | InterpolationNode
+    | CompoundExpressionNode
 
 // 属性节点
 export interface AttributeNode {
@@ -80,6 +82,11 @@ export interface TransformContext extends TransformOptions {
     childIndex: number // 记录当前节点在父节点 children 数组中的索引
 }
 
+// 复合表达式节点【合并插件处理的】
+export interface CompoundExpressionNode {
+    type: NodeTypes.COMPOUND_EXPRESSION;
+    children: (ASTNode | string)[]
+}
 
 
 
